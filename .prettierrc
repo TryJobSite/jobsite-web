@@ -1,0 +1,17 @@
+{
+  "endOfLine": "lf",
+  "semi": true,
+  "singleQuote": true,
+  "arrowParens": "always",
+  "tabWidth": 2,
+  "trailingComma": "es5",
+  "printWidth": 110,
+  "bracketSameLine": false,
+  "plugins": ["prettier-plugin-tailwindcss", "prettier-plugin-classnames", "prettier-plugin-merge"],
+  "tailwindStylesheet": "./app/globals.css",
+  "tailwindConfig": "./tailwind.config.js",
+  "tailwindFunctions": ["clsx", "cn", "tw"],
+  "customFunctions": ["cn", "tw", "twMerge", "clsx"],
+  "tailwindPreserveWhitespace": true,
+  "tailwindPreserveDuplicates": false
+}

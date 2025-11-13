@@ -1,0 +1,7 @@
+{
+  "editor.formatOnSave": true,
+  "prettier.prettierPath": "./node_modules/prettier/index.cjs",
+  "prettier.configPath": "./.prettierrc",
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "cSpell.words": ["Fileupload"]
+}

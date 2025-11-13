@@ -1,0 +1,57 @@
+@import 'tailwindcss' important;
+@plugin "tailwindcss-animate";
+
+@theme {
+  /* shadcn/ui colors */
+  --color-background: oklch(100% 0 0);
+  --color-foreground: oklch(9% 0.03 285.885);
+  --color-card: oklch(100% 0 0);
+  --color-card-foreground: oklch(9% 0.03 285.885);
+  --color-popover: oklch(100% 0 0);
+  --color-popover-foreground: oklch(9% 0.03 285.885);
+  --color-primary: oklch(21.5% 0.0216 285.885);
+  --color-primary-foreground: oklch(98% 0 0);
+  --color-secondary: oklch(96.1% 0 0);
+  --color-secondary-foreground: oklch(21.5% 0.0216 285.885);
+  --color-muted: oklch(96.1% 0 0);
+  --color-muted-foreground: oklch(46.9% 0.0174 285.879);
+  --color-accent: oklch(96.1% 0 0);
+  --color-accent-foreground: oklch(21.5% 0.0216 285.885);
+  --color-destructive: oklch(60.2% 0.202 27.325);
+  --color-destructive-foreground: oklch(98% 0 0);
+  --color-border: oklch(91.4% 0.006 285.883);
+  --color-input: oklch(91.4% 0.006 285.883);
+  --color-ring: oklch(9% 0.03 285.885);
+
+  /* Custom colors */
+  --color-primary-600: #da2f16;
+  --color-standard-red: #a62915;
+  --color-hover: #e7ebf0;
+
+  /* Border radius */
+  --radius-lg: 0.5rem;
+  --radius-md: calc(0.5rem - 2px);
+  --radius-sm: calc(0.5rem - 4px);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+html,
+body,
+div {
+  @apply font-sans; /* uses the `sans` defined above */
+}
+
+@layer components {
+  .label-rg-24 {
+    @apply text-[24px] leading-none font-normal tracking-[-0.48px] text-red-500;
+  }
+}
+
+@layer utilities {
+  .bg-scrollable-card {
+    background: linear-gradient(180deg, #fff 88.66%, #edf0f4 98.3%, rgba(0, 0, 0, 0.08) 149.67%);
+  }
+}
