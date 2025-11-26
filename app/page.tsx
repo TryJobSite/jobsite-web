@@ -6,7 +6,6 @@ import { Button } from '@/(components)/shadcn/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/(components)/shadcn/ui/card';
 import { Check } from 'lucide-react';
 import { useApi } from './(hooks)/useApi';
-import { useQuery } from '@tanstack/react-query';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -68,11 +67,6 @@ const pricingTiers = [
 ];
 
 export default function Home() {
-  const { api } = useApi();
-  const { data } = useQuery({
-    queryKey: ['home'],
-    queryFn: () => api.GET('/test/foo', {}),
-  });
   return (
     <div className={`${inter.className} flex min-h-screen flex-col bg-slate-50 text-slate-900`}>
       <main className="flex-1">
