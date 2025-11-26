@@ -15,7 +15,8 @@ export const useApiServerSide = () => {
   });
   const myMiddleware: Middleware = {
     async onRequest(req: Request) {
-      const sessionCookie = (await cookies()).get('session')?.value;
+      const sessionCookie = (await cookies()).get('jobsite-session')?.value;
+      console.log({ sessionCookie });
       if (!sessionCookie) {
         throw new Error('No session cookie found');
       }

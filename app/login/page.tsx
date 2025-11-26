@@ -1,5 +1,5 @@
 import React from 'react';
-import SignupFlowClient from './page.client';
+import LoginPageClient from './page.client';
 import { PageProps } from '@/utils/pageProps';
 import { useApiServerSide } from '@/(hooks)/useApiServerSide';
 import { redirect } from 'next/navigation';
@@ -9,10 +9,11 @@ export default async function SignupServer(props: PageProps<[], ['referralCode',
   const { api } = useApiServerSide();
   try {
     const me = await api.GET('/me', {});
+    console.log({ me });
     hasAcc = !!me.data?.responseObject.user.userId;
   } catch (error) {
     console.log(error);
   }
   if (hasAcc) return redirect('/home');
-  return <SignupFlowClient />;
+  return <LoginPageClient />;
 }

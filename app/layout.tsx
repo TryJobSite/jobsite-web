@@ -5,6 +5,9 @@ import './globals.css';
 import { Providers } from './providers';
 import { Button } from '@/(components)/shadcn/ui/button';
 import Link from 'next/link';
+import { useApiServerSide } from './(hooks)/useApiServerSide';
+import { redirect } from 'next/navigation';
+import { headers } from 'next/headers';
 
 export const metadata = {
   title: 'Job Site',
@@ -12,6 +15,21 @@ export const metadata = {
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const { api } = useApiServerSide();
+  const isMobileApp = (await headers()).get('x-adro-mobile-app') === 'true';
+  const darkMode = (await headers()).get('x-dark-mode') === 'true';
+  let me: any = null;
+  let redirectToLogin = false;
+  try {
+    const req = await api.GET('/me', {
+      cache: 'no-store',
+    });
+    me = req.data?.responseObject;
+  } catch (error: any) {
+    // we redirect to login in provider if no client is passed
+    if (error?.statusCode === 401) redirectToLogin = true;
+  }
+  if (redirectToLogin) return redirect('/login?force');
   return (
     <html lang="en" className="font-helvetica text-lg">
       <body
@@ -42,7 +60,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             </nav>
             <div className="hidden items-center gap-3 md:flex">
               <Button variant="ghost" asChild>
-                <a href="#pricing">View Pricing</a>
+                <Link href="/login">Login</Link>
               </Button>
               <Button asChild>
                 <Link href="/signup">Get Started</Link>

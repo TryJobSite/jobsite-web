@@ -193,16 +193,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
               toastOptions={{ defaultOptions: { position: 'top', isClosable: true } }}
             >
               <IntercomProvider appId={'x6l0svm8'}>
-                <TokenRefresher>
-                  <Box
-                    width="100%"
-                    h={{ sm: pathname !== '/plaid-auth' ? '100%' : undefined }}
-                    minH={'100vh'}
-                    // bg="white"
-                  >
-                    {children}
-                  </Box>
-                </TokenRefresher>
+                <TokenRefresher>{children}</TokenRefresher>
               </IntercomProvider>
             </ChakraProvider>
           </QueryClientProvider>
