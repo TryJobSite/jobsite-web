@@ -653,7 +653,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/jobs/:jobId/{jobId}": {
+    "/jobs/{jobId}": {
         parameters: {
             query?: never;
             header?: never;
@@ -764,6 +764,331 @@ export interface paths {
                                         updatedAt: string;
                                         deletedAt: string | null;
                                     };
+                                };
+                            };
+                            statusCode: number;
+                        };
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
+    "/jobs/statementofwork/{jobId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    jobId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Success */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            success: boolean;
+                            message: string;
+                            responseObject: {
+                                statementOfWork: {
+                                    statementOfWorkId: string;
+                                    contractorId: string;
+                                    jobId: string;
+                                    lineItems: {
+                                        description: string;
+                                        price?: number | null;
+                                    }[];
+                                    notes: string | null;
+                                    createdAt: string;
+                                    updatedAt: string;
+                                } | null;
+                            };
+                            statusCode: number;
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    jobId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        lineItems: {
+                            description: string;
+                            price?: number | null;
+                        }[];
+                        notes?: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Success */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            success: boolean;
+                            message: string;
+                            responseObject: {
+                                statementOfWork: {
+                                    statementOfWorkId: string;
+                                    contractorId: string;
+                                    jobId: string;
+                                    lineItems: {
+                                        description: string;
+                                        price?: number | null;
+                                    }[];
+                                    notes: string | null;
+                                    createdAt: string;
+                                    updatedAt: string;
+                                };
+                            };
+                            statusCode: number;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    jobId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        lineItems?: {
+                            description: string;
+                            price?: number | null;
+                        }[];
+                        notes?: string | null;
+                    };
+                };
+            };
+            responses: {
+                /** @description Success */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            success: boolean;
+                            message: string;
+                            responseObject: {
+                                statementOfWork: {
+                                    statementOfWorkId: string;
+                                    contractorId: string;
+                                    jobId: string;
+                                    lineItems: {
+                                        description: string;
+                                        price?: number | null;
+                                    }[];
+                                    notes: string | null;
+                                    createdAt: string;
+                                    updatedAt: string;
+                                };
+                            };
+                            statusCode: number;
+                        };
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
+    "/jobs/changeorders/{jobId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    jobId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Success */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            success: boolean;
+                            message: string;
+                            responseObject: {
+                                changeOrders: {
+                                    changeOrderId: string;
+                                    jobId: string;
+                                    lineItems: {
+                                        description: string;
+                                        price?: number | null;
+                                    }[];
+                                    notes: string | null;
+                                    customerNotified: boolean;
+                                    createdAt: string;
+                                    updatedAt: string;
+                                }[];
+                            };
+                            statusCode: number;
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    jobId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        lineItems: {
+                            description: string;
+                            price?: number | null;
+                        }[];
+                        notes?: string;
+                        customerNotified?: boolean;
+                    };
+                };
+            };
+            responses: {
+                /** @description Success */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            success: boolean;
+                            message: string;
+                            responseObject: {
+                                changeOrder: {
+                                    changeOrderId: string;
+                                    jobId: string;
+                                    lineItems: {
+                                        description: string;
+                                        price?: number | null;
+                                    }[];
+                                    notes: string | null;
+                                    customerNotified: boolean;
+                                    createdAt: string;
+                                    updatedAt: string;
+                                };
+                            };
+                            statusCode: number;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/jobs/changeorders/{jobId}/{changeOrderId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    jobId: string;
+                    changeOrderId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        lineItems?: {
+                            description: string;
+                            price?: number | null;
+                        }[];
+                        notes?: string | null;
+                        customerNotified?: boolean;
+                    };
+                };
+            };
+            responses: {
+                /** @description Success */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            success: boolean;
+                            message: string;
+                            responseObject: {
+                                changeOrder: {
+                                    changeOrderId: string;
+                                    jobId: string;
+                                    lineItems: {
+                                        description: string;
+                                        price?: number | null;
+                                    }[];
+                                    notes: string | null;
+                                    customerNotified: boolean;
+                                    createdAt: string;
+                                    updatedAt: string;
                                 };
                             };
                             statusCode: number;

@@ -16,14 +16,13 @@ export const useMe = (props?: { clientInfo: ClientType }) => {
   const refresh = () => {
     router.refresh();
   };
-  console.log({ pathname });
   const dontQuery =
     (Object.values(RouteHelper.UnAuthed) as ReadonlyArray<string | (() => string)>).some(
       (x) => typeof x === 'string' && pathname.startsWith(x)
     ) ||
     [...validUnauthedRegex, ...validAuthedOrUnauthedRegex].some((r) => r.test(pathname)) ||
     pathname === '/';
-  console.log({ dontQuery });
+
   const { data: me, refetch } = useQuery({
     queryKey: ['meQuery'],
     enabled: !dontQuery,
@@ -58,7 +57,7 @@ export const useMe = (props?: { clientInfo: ClientType }) => {
           queryKey: ['meQuery'],
         });
         router.refresh();
-        window.location.reload();
+        router.push('/login');
       } else {
         alert('Logout failed. Please try again.');
       }

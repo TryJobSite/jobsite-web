@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -65,6 +66,7 @@ function formatContactMethod(method: string | null | undefined): string {
 
 export default function CustomersPage() {
   const { api } = useApi();
+  const router = useRouter();
   const queryClient = useQueryClient();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -91,22 +93,8 @@ export default function CustomersPage() {
 
   const customers = data || [];
 
-  const handleEditCustomer = (customer: Customer) => {
-    setEditingCustomer(customer);
-    editForm.reset({
-      firstName: customer.firstName,
-      lastName: customer.lastName,
-      email: customer.email,
-      phoneNumber: customer.phoneNumber || '',
-      preferredContactMethod: customer.preferredContactMethod || undefined,
-      addressLine1: customer.addressLine1,
-      addressLine2: customer.addressLine2 || '',
-      city: customer.city,
-      state: customer.state,
-      postalCode: customer.postalCode,
-      notes: customer.notes || '',
-    });
-    setIsEditDialogOpen(true);
+  const handleCustomerClick = (customer: Customer) => {
+    router.push(`/customers/${customer.customerId}`);
   };
 
   const onSubmitCreateCustomer = async (data: CustomerFormData) => {
@@ -227,7 +215,7 @@ export default function CustomersPage() {
             <Card
               key={customer.customerId}
               className="flex cursor-pointer flex-col transition-shadow hover:shadow-md"
-              onClick={() => handleEditCustomer(customer)}
+              onClick={() => handleCustomerClick(customer)}
             >
               <CardHeader>
                 <CardTitle className="text-lg">

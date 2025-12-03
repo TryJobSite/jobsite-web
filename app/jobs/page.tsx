@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -128,6 +129,7 @@ function parseBudgetFromInput(value: string): string {
 
 export default function JobsPage() {
   const { api } = useApi();
+  const router = useRouter();
   const queryClient = useQueryClient();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -195,56 +197,8 @@ export default function JobsPage() {
     }
   }, [selectedCustomerId, customers, createForm]);
 
-  const handleEditJob = (job: Job) => {
-    setEditingJob(job);
-    // Convert ISO dates to date format (YYYY-MM-DD) for estimated dates
-    const formatDateOnlyForInput = (dateStr: string | null | undefined) => {
-      if (!dateStr) return '';
-      try {
-        const date = new Date(dateStr);
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
-      } catch {
-        return '';
-      }
-    };
-    // Convert ISO dates to datetime-local format for actual dates
-    const formatDateTimeForInput = (dateStr: string | null | undefined) => {
-      if (!dateStr) return '';
-      try {
-        const date = new Date(dateStr);
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        const hours = String(date.getHours()).padStart(2, '0');
-        const minutes = String(date.getMinutes()).padStart(2, '0');
-        return `${year}-${month}-${day}T${hours}:${minutes}`;
-      } catch {
-        return '';
-      }
-    };
-
-    editForm.reset({
-      customerId: job.customerId,
-      jobNumber: job.jobNumber || '',
-      title: job.title,
-      description: job.description || '',
-      status: job.status,
-      estimatedStartDate: formatDateOnlyForInput(job.estimatedStartDate),
-      estimatedEndDate: formatDateOnlyForInput(job.estimatedEndDate),
-      actualStartDate: formatDateTimeForInput(job.actualStartDate),
-      actualEndDate: formatDateTimeForInput(job.actualEndDate),
-      budget: formatBudgetForInput(job.budget),
-      addressLine1: job.addressLine1 || '',
-      addressLine2: job.addressLine2 || '',
-      city: job.city || '',
-      state: job.state || '',
-      postalCode: job.postalCode || '',
-      country: job.country || '',
-    });
-    setIsEditDialogOpen(true);
+  const handleJobClick = (job: Job) => {
+    router.push(`/jobs/${job.jobId}`);
   };
 
   const onSubmitCreateJob = async (data: JobFormData) => {
@@ -310,7 +264,7 @@ export default function JobsPage() {
         return new Date(dateStr).toISOString();
       };
 
-      const response = await api.PATCH('/jobs/:jobId/{jobId}', {
+      const response = await api.PATCH('/jobs/{jobId}', {
         params: {
           path: {
             jobId: editingJob.jobId,
@@ -399,7 +353,7 @@ export default function JobsPage() {
             <Card
               key={job.jobId}
               className="flex cursor-pointer flex-col transition-shadow hover:shadow-md"
-              onClick={() => handleEditJob(job)}
+              onClick={() => handleJobClick(job)}
             >
               <CardHeader>
                 <div className="flex items-start justify-between gap-2">
