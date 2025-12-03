@@ -1,5 +1,6 @@
 export const RouteHelper = {
   UnAuthed: {
+    // Root: '/',
     Login: '/login',
     Signup: '/signup',
     ForgotPassword: '/forgot-password',
@@ -11,15 +12,6 @@ export const RouteHelper = {
   },
 } as const;
 
-export const validUnauthedRegex = [
-  /^\/login/,
-  /^\/signup/,
-  /^\/forgot-password/,
-  /^\/reset-password/,
-];
+export const validUnauthedRegex = [/^\/login/, /^\/signup/, /^\/forgot-password/, /^\/reset-password/];
 
-export const validAuthedOrUnauthedRegex = [
-  /^\/public/,
-  /^\/about/,
-];
-
+export const validAuthedOrUnauthedRegex = [/^\/public/, /^\/about/];

@@ -13,6 +13,6 @@ export default async function SignupServer(props: PageProps<[], ['referralCode',
   } catch (error) {
     console.log(error);
   }
-  if (hasAcc) return redirect('/home');
+  // if (hasAcc) return redirect('/home');
   return <SignupFlowClient />;
 }

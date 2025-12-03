@@ -12,6 +12,7 @@ import { useEffect, useState } from 'react';
 import { useApi } from '@/(hooks)/useApi';
 import useAppRouter from '@/(hooks)/useAppRouter';
 import { useMe } from '@/(hooks)/useMe';
+import LoggedOutHeader from '@/(components)/layout/logged-out-header';
 
 const loginSchema = z.object({
   email: z.email().min(1, 'Email is required'),
@@ -25,7 +26,7 @@ export default function LoginPageClient() {
   const { me } = useMe();
   const router = useAppRouter();
   useEffect(() => {
-    if (me) {
+    if (me?.user?.userId) {
       router.replace('/home');
     }
   }, [me]);
@@ -47,6 +48,12 @@ export default function LoginPageClient() {
         body: data,
       });
       console.log('Login response:', response);
+      if (response?.data?.success) {
+        console.log('routing to home');
+        router.replace('/home');
+      } else {
+        alert('Login failed. Please check your credentials and try again.');
+      }
       // TODO: Handle successful login (redirect, set session, etc.)
     } catch (error) {
       console.error('Login error:', error);
@@ -57,54 +64,58 @@ export default function LoginPageClient() {
   };
 
   return (
-    <div
-      className="flex min-h-[calc(100vh-81px)] items-center justify-center bg-gradient-to-br from-slate-50
-        to-slate-100 p-4"
-    >
-      <Card className="w-full max-w-md shadow-lg">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold">Welcome back</CardTitle>
-          <CardDescription>Sign in to your Job Site account</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="userEmail">Email</Label>
-              <Input
-                id="userEmail"
-                type="email"
-                placeholder="name@company.com"
-                {...register('email')}
-                className={errors.email ? 'border-red-500' : ''}
-              />
-              {errors.email && <p className="text-sm text-red-500">{errors.email.message}</p>}
-            </div>
+    <>
+      <LoggedOutHeader />
+      <div
+        className="flex min-h-[calc(100vh-81px)] items-center justify-center bg-gradient-to-br from-slate-50
+          to-slate-100 p-4"
+      >
+        <Card className="w-full max-w-md shadow-lg">
+          <CardHeader className="space-y-1">
+            <CardTitle className="text-2xl font-bold">Welcome back</CardTitle>
+            <CardDescription>Sign in to your Job Site account</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="userEmail">Email</Label>
+                <Input
+                  id="userEmail"
+                  type="email"
+                  placeholder="name@company.com"
+                  autoFocus
+                  {...register('email')}
+                  className={errors.email ? 'border-red-500' : ''}
+                />
+                {errors.email && <p className="text-sm text-red-500">{errors.email.message}</p>}
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="Enter your password"
-                {...register('password')}
-                className={errors.password ? 'border-red-500' : ''}
-              />
-              {errors.password && <p className="text-sm text-red-500">{errors.password.message}</p>}
-            </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="Enter your password"
+                  {...register('password')}
+                  className={errors.password ? 'border-red-500' : ''}
+                />
+                {errors.password && <p className="text-sm text-red-500">{errors.password.message}</p>}
+              </div>
 
-            <Button type="submit" className="w-full" disabled={isSubmitting}>
-              {isSubmitting ? 'Signing in...' : 'Sign in'}
-            </Button>
+              <Button type="submit" className="w-full" disabled={isSubmitting}>
+                {isSubmitting ? 'Signing in...' : 'Sign in'}
+              </Button>
 
-            <div className="text-center text-sm text-slate-600">
-              Don't have an account?{' '}
-              <Link href="/signup" className="font-medium text-primary hover:underline">
-                Sign up
-              </Link>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
-    </div>
+              <div className="text-center text-sm text-slate-600">
+                Don't have an account?{' '}
+                <Link href="/signup" className="font-medium text-primary hover:underline">
+                  Sign up
+                </Link>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+    </>
   );
 }

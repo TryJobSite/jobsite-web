@@ -16,11 +16,13 @@ export const useMe = (props?: { clientInfo: ClientType }) => {
   const refresh = () => {
     router.refresh();
   };
-
+  console.log({ pathname });
   const dontQuery =
     (Object.values(RouteHelper.UnAuthed) as ReadonlyArray<string | (() => string)>).some(
       (x) => typeof x === 'string' && pathname.startsWith(x)
-    ) || [...validUnauthedRegex, ...validAuthedOrUnauthedRegex].some((r) => r.test(pathname));
+    ) ||
+    [...validUnauthedRegex, ...validAuthedOrUnauthedRegex].some((r) => r.test(pathname)) ||
+    pathname === '/';
   console.log({ dontQuery });
   const { data: me, refetch } = useQuery({
     queryKey: ['meQuery'],
@@ -49,15 +51,17 @@ export const useMe = (props?: { clientInfo: ClientType }) => {
           }) as ClientType
       ),
     logout: async () => {
-      await fetch('/api/logout', {
-        method: 'POST',
-      });
-      queryClient.clear();
-      queryClient.removeQueries({
-        queryKey: ['meQuery'],
-      });
-      router.refresh();
-      window.location.reload();
+      const res = await api.POST('/logout', {});
+      if (res.data?.success) {
+        queryClient.clear();
+        queryClient.removeQueries({
+          queryKey: ['meQuery'],
+        });
+        router.refresh();
+        window.location.reload();
+      } else {
+        alert('Logout failed. Please try again.');
+      }
     },
     /**
      * Refresh using router.refresh()
