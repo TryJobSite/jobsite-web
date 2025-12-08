@@ -10,18 +10,14 @@ import { usePathname } from 'next/navigation';
 import React, { useEffect } from 'react';
 import { CookiesProvider } from 'react-cookie';
 import { IntercomProvider } from 'react-use-intercom';
-// import { paths } from '../apiDocs';
-// import { useApi } from './(hooks)/useApi';
-// import { useGetMyAccounts } from './(hooks)/useGetMyAccounts';
-// import { useIsBusinessCookie } from './(hooks)/useIsBusinessCookie';
-// import { useMe } from './(hooks)/useMe';
 import theme from './theme/theme';
 import { RouteHelper } from './utils/routeHelper';
+import { SessionProvider } from 'next-auth/react';
 dayjs.extend(advancedFormat); // extend functionality of dayjs globally
 
 export const queryClient = new QueryClient();
 
-export function Providers({ children }: { children: React.ReactNode }) {
+export function Providers({ children, session }: { children: React.ReactNode; session: any }) {
   const pathname = usePathname();
   const { init } = useAnalytics();
   useEffect(() => {
@@ -52,22 +48,22 @@ export function Providers({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    // <SessionProvider>
-    // <ReCaptchaProvider
+    <SessionProvider session={session}>
+      {/* // <ReCaptchaProvider
     //   reCaptchaKey={RECAPTCHA_KEY}
     //   useEnterprise
     //   className={!pathname.startsWith('/signup') ? 'hide-grecaptcha' : 'hide-grecaptcha'}
-    // >
-    <AppProgressProvider color="#DA2F16" height={'6px'}>
-      <CookiesProvider defaultSetOptions={{ path: '/' }}>
-        <QueryClientProvider client={queryClient}>
-          <IntercomProvider appId={'x6l0svm8'}>
-            <TokenRefresher>{children}</TokenRefresher>
-          </IntercomProvider>
-        </QueryClientProvider>
-      </CookiesProvider>
-    </AppProgressProvider>
-    // </ReCaptchaProvider>
-    // </SessionProvider>
+    // > */}
+      <AppProgressProvider color="#DA2F16" height={'6px'}>
+        <CookiesProvider defaultSetOptions={{ path: '/' }}>
+          <QueryClientProvider client={queryClient}>
+            <IntercomProvider appId={'x6l0svm8'}>
+              <TokenRefresher>{children}</TokenRefresher>
+            </IntercomProvider>
+          </QueryClientProvider>
+        </CookiesProvider>
+      </AppProgressProvider>
+      {/* // </ReCaptchaProvider> */}
+    </SessionProvider>
   );
 }

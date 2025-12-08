@@ -4,10 +4,11 @@ import { useApi } from '@/(hooks)/useApi';
 import { useQuery, useQueries } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/(components)/shadcn/ui/card';
 import { Button } from '@/(components)/shadcn/ui/button';
-import { Copy, Gift, AlertCircle, ArrowRight } from 'lucide-react';
+import { Copy, Gift, AlertCircle, ArrowRight, Mail, CheckCircle2, XCircle } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { paths } from '../../apiDocs';
+import { signIn, signOut, useSession } from 'next-auth/react';
 
 type Job =
   paths['/jobs']['get']['responses']['200']['content']['application/json']['responseObject']['jobs'][number];
@@ -15,6 +16,7 @@ type ChangeOrder =
   paths['/jobs/changeorders/{jobId}']['get']['responses']['200']['content']['application/json']['responseObject']['changeOrders'][number];
 
 export default function Home() {
+  const { data: session } = useSession();
   const { me } = useMe();
   const { api } = useApi();
   const [copied, setCopied] = useState(false);
@@ -176,6 +178,45 @@ export default function Home() {
           </CardContent>
         </Card>
       ) : null}
+
+      <Card className="border-2 border-slate-200">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Mail className="h-5 w-5 text-slate-700" />
+              <CardTitle>Google Email Integration</CardTitle>
+            </div>
+            {(me as any)?.user?.googleConnected ? (
+              <span className="flex items-center gap-1 text-sm text-emerald-600">
+                <CheckCircle2 className="h-4 w-4" />
+                Connected
+              </span>
+            ) : (
+              <span className="flex items-center gap-1 text-sm text-slate-500">
+                <XCircle className="h-4 w-4" />
+                Not Connected
+              </span>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent>
+          <p className="mb-4 text-sm text-slate-600">
+            Connect your Google account to send emails directly from your account. This allows you to notify
+            customers about change orders and other important updates.
+          </p>
+          <div>
+            {!session ? (
+              <button onClick={() => signIn('google')}>Sign in with Google</button>
+            ) : (
+              <div>
+                <p>Signed in as {session.user?.email}</p>
+                <button onClick={() => signOut()}>Sign out</button>
+              </div>
+            )}
+          </div>
+          {/* )} */}
+        </CardContent>
+      </Card>
 
       <div>
         Welcome, {me?.user?.firstName} with {me?.company?.companyName}
