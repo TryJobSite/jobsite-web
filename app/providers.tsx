@@ -17,7 +17,7 @@ dayjs.extend(advancedFormat); // extend functionality of dayjs globally
 
 export const queryClient = new QueryClient();
 
-export function Providers({ children, session }: { children: React.ReactNode; session: any }) {
+export function Providers({ children, session }: { children: React.ReactNode; session: any | null }) {
   const pathname = usePathname();
   const { init } = useAnalytics();
   useEffect(() => {
