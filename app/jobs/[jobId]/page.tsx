@@ -7,117 +7,29 @@ import { useParams, useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/(components)/shadcn/ui/card';
 import { Button } from '@/(components)/shadcn/ui/button';
-import { Input } from '@/(components)/shadcn/ui/input';
-import { Label } from '@/(components)/shadcn/ui/label';
+import { ArrowLeft, Plus } from 'lucide-react';
+import { DescriptionCard } from './(components)/description-card';
+import { JobDetailsCard } from './(components)/job-details-card';
+import { ScopeOfWorkCard } from './(components)/scope-of-work-card';
+import { ChangeOrdersCard } from './(components)/change-orders-card';
+import { PaymentDrawsCard } from './(components)/payment-draws-card';
+import { DocumentsCard } from './(components)/documents-card';
+import { JobHeaderCard } from './(components)/job-header-card';
+import { TimelineCard } from './(components)/timeline-card';
+import { ChangeOrderModal } from './(components)/change-order-modal';
+import { PaymentDrawModal } from './(components)/payment-draw-modal';
+import { DocumentUploadModal } from './(components)/document-upload-modal';
+import { DocumentViewerModal } from './(components)/document-viewer-modal';
+import { JobDetailsUpdateModal } from './(components)/job-details-update-modal';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/(components)/shadcn/ui/dialog';
-import { ArrowLeft, Plus, Trash2, Edit } from 'lucide-react';
-import Link from 'next/link';
-
-type Job = {
-  jobId: string;
-  companyId: string;
-  customerId: string;
-  jobNumber: string | null;
-  title: string;
-  description: string | null;
-  status: 'planned' | 'in-progress' | 'completed' | 'cancelled' | 'on-hold';
-  estimatedStartDate: string | null;
-  estimatedEndDate: string | null;
-  actualStartDate: string | null;
-  actualEndDate: string | null;
-  budget: number | null;
-  addressLine1: string | null;
-  addressLine2: string | null;
-  city: string | null;
-  state: string | null;
-  postalCode: string | null;
-  country: string | null;
-  metadata: Record<string, unknown>;
-  createdAt: string;
-  updatedAt: string;
-  deletedAt: string | null;
-  customer?: {
-    customerId: string;
-    firstName: string;
-    lastName: string;
-    email: string;
-  };
-};
-
-function formatDate(dateString: string | null | undefined): string {
-  if (!dateString) return 'Not set';
-  try {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
-  } catch {
-    return dateString;
-  }
-}
-
-function formatCurrency(amount: number | null | undefined): string {
-  if (amount === null || amount === undefined) return 'Not set';
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-  }).format(amount);
-}
-
-function getStatusColor(status: string): string {
-  const colors: Record<string, string> = {
-    planned: 'bg-blue-100 text-blue-800',
-    'in-progress': 'bg-yellow-100 text-yellow-800',
-    completed: 'bg-emerald-100 text-emerald-800',
-    cancelled: 'bg-red-100 text-red-800',
-    'on-hold': 'bg-slate-100 text-slate-800',
-  };
-  return colors[status] || 'bg-slate-100 text-slate-800';
-}
-
-function formatStatus(status: string): string {
-  return status
-    .split('-')
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
-}
-
-function formatDateOnlyForInput(dateStr: string | null | undefined): string {
-  if (!dateStr) return '';
-  try {
-    const date = new Date(dateStr);
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  } catch {
-    return '';
-  }
-}
-
-function formatBudgetForInput(value: number | null | undefined): string {
-  if (value === null || value === undefined) return '';
-  return value.toFixed(2);
-}
-
-function parseBudgetFromInput(value: string): string {
-  const cleaned = value.replace(/[^\d.]/g, '');
-  const parts = cleaned.split('.');
-  if (parts.length > 2) {
-    return parts[0] + '.' + parts.slice(1).join('');
-  }
-  return cleaned;
-}
+  formatDateOnlyForInput,
+  formatBudgetForInput,
+  parseBudgetFromInput,
+  getStatusColor,
+  formatStatus,
+} from './(components)/utils';
+import type { Job, ScopeOfWork, ChangeOrder, PaymentDraw } from './(components)/types';
 
 const addressSchema = z.object({
   addressLine1: z.string().optional(),
@@ -135,9 +47,12 @@ const descriptionSchema = z.object({
 const lineItemSchema = z.object({
   description: z.string().min(1, 'Description is required'),
   price: z.string().optional(),
+  startDate: z.string().optional(),
+  endDate: z.string().optional(),
+  contractor: z.string().optional(),
 });
 
-const statementOfWorkSchema = z.object({
+const scopeOfWorkSchema = z.object({
   lineItems: z.array(lineItemSchema).min(1, 'At least one line item is required'),
   notes: z.string().optional(),
 });
@@ -145,7 +60,7 @@ const statementOfWorkSchema = z.object({
 const changeOrderSchema = z.object({
   lineItems: z.array(lineItemSchema).min(1, 'At least one line item is required'),
   notes: z.string().optional(),
-  customerNotified: z.boolean().optional(),
+  status: z.enum(['created', 'paymentRequested', 'paid']),
 });
 
 const jobDetailsSchema = z.object({
@@ -156,37 +71,44 @@ const jobDetailsSchema = z.object({
   actualEndDate: z.string().optional(),
 });
 
+const jobDetailsUpdateSchema = z.object({
+  description: z.string(),
+  addressLine1: z.string(),
+  addressLine2: z.string(),
+  city: z.string(),
+  state: z.string(),
+  postalCode: z.string(),
+  country: z.string(),
+  status: z.enum(['planned', 'in-progress', 'completed', 'cancelled', 'on-hold']),
+  budget: z.string(),
+});
+
+const paymentDrawSchema = z.object({
+  paymentAmount: z.string(),
+  expectedPaymentDate: z.string().min(1, 'Expected payment date is required'),
+  actualPaymentDate: z.string().optional().nullable(),
+  dateRequested: z.string().optional().nullable(),
+  status: z.enum(['future', 'requested', 'paid']).optional(),
+  description: z.string().optional().nullable(),
+  images: z.array(z.string()).optional(),
+  customerNotified: z.boolean().optional(),
+});
+
+const documentUploadSchema = z.object({
+  fileName: z.string().min(1, 'File name is required'),
+  fileType: z.string().min(1, 'File type is required'),
+  fileData: z.string().min(1, 'File data is required'),
+  notes: z.string().optional().nullable(),
+});
+
 type AddressFormData = z.infer<typeof addressSchema>;
 type DescriptionFormData = z.infer<typeof descriptionSchema>;
-type StatementOfWorkFormData = z.infer<typeof statementOfWorkSchema>;
+type ScopeOfWorkFormData = z.infer<typeof scopeOfWorkSchema>;
 type ChangeOrderFormData = z.infer<typeof changeOrderSchema>;
 type JobDetailsFormData = z.infer<typeof jobDetailsSchema>;
+type PaymentDrawFormData = z.infer<typeof paymentDrawSchema>;
 
-type StatementOfWork = {
-  statementOfWorkId: string;
-  contractorId: string;
-  jobId: string;
-  lineItems: {
-    description: string;
-    price?: number | null;
-  }[];
-  notes: string | null;
-  createdAt: string;
-  updatedAt: string;
-};
-
-type ChangeOrder = {
-  changeOrderId: string;
-  jobId: string;
-  lineItems: {
-    description: string;
-    price?: number | null;
-  }[];
-  notes: string | null;
-  customerNotified: boolean;
-  createdAt: string;
-  updatedAt: string;
-};
+type ScopeOfWOrk = ScopeOfWork;
 
 export default function JobDetailPage() {
   const params = useParams();
@@ -201,6 +123,19 @@ export default function JobDetailPage() {
   const [isCreatingSOW, setIsCreatingSOW] = useState(false);
   const [isCreateChangeOrderOpen, setIsCreateChangeOrderOpen] = useState(false);
   const [editingChangeOrderId, setEditingChangeOrderId] = useState<string | null>(null);
+  const [isCreatePaymentDrawOpen, setIsCreatePaymentDrawOpen] = useState(false);
+  const [editingPaymentDrawId, setEditingPaymentDrawId] = useState<string | null>(null);
+  const [viewingPaymentDraw, setViewingPaymentDraw] = useState<PaymentDraw | null>(null);
+  const [isDocumentUploadOpen, setIsDocumentUploadOpen] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [viewingDocument, setViewingDocument] = useState<{
+    clientUploadId: string;
+    fileName: string;
+    fileType: string;
+    documentUrl: string;
+    notes: string | null;
+  } | null>(null);
+  const [isJobDetailsUpdateOpen, setIsJobDetailsUpdateOpen] = useState(false);
 
   const addressForm = useForm<AddressFormData>({
     resolver: zodResolver(addressSchema),
@@ -214,8 +149,8 @@ export default function JobDetailPage() {
     resolver: zodResolver(jobDetailsSchema),
   });
 
-  const sowForm = useForm<StatementOfWorkFormData>({
-    resolver: zodResolver(statementOfWorkSchema),
+  const sowForm = useForm<ScopeOfWorkFormData>({
+    resolver: zodResolver(scopeOfWorkSchema),
     defaultValues: {
       lineItems: [{ description: '', price: '' }],
       notes: '',
@@ -227,22 +162,76 @@ export default function JobDetailPage() {
     defaultValues: {
       lineItems: [{ description: '', price: '' }],
       notes: '',
+      status: 'created',
+    },
+  });
+
+  const paymentDrawForm = useForm<PaymentDrawFormData>({
+    resolver: zodResolver(paymentDrawSchema),
+    defaultValues: {
+      paymentAmount: '',
+      expectedPaymentDate: '',
+      actualPaymentDate: null,
+      dateRequested: '',
+      status: 'future',
+      description: null,
+      images: [],
       customerNotified: false,
     },
   });
 
+  const documentForm = useForm<{
+    fileName: string;
+    fileType: string;
+    fileData: string;
+    notes?: string | null;
+  }>({
+    resolver: zodResolver(documentUploadSchema),
+    defaultValues: {
+      fileName: '',
+      fileType: '',
+      fileData: '',
+      notes: null,
+    },
+  });
+
+  const jobDetailsUpdateForm = useForm<{
+    description: string;
+    addressLine1: string;
+    addressLine2: string;
+    city: string;
+    state: string;
+    postalCode: string;
+    country: string;
+    status: 'planned' | 'in-progress' | 'completed' | 'cancelled' | 'on-hold';
+    budget: string;
+  }>({
+    resolver: zodResolver(jobDetailsUpdateSchema),
+    defaultValues: {
+      description: '',
+      addressLine1: '',
+      addressLine2: '',
+      city: '',
+      state: '',
+      postalCode: '',
+      country: '',
+      status: 'planned',
+      budget: '',
+    },
+  });
+
   const { data: sowData, isLoading: isLoadingSOW } = useQuery({
-    queryKey: ['statementOfWork', jobId],
+    queryKey: ['scopeOfWork', jobId],
     queryFn: async () => {
       try {
-        const response = await api.GET('/jobs/statementofwork/{jobId}', {
+        const response = await api.GET('/jobs/scopeofwork/{jobId}', {
           params: {
             path: {
               jobId: jobId,
             },
           },
         });
-        return response.data?.responseObject?.statementOfWork as StatementOfWork | null;
+        return response.data?.responseObject?.scopeOfWork as ScopeOfWOrk | null;
       } catch (error: any) {
         if (error?.statusCode === 404) {
           return null;
@@ -273,6 +262,37 @@ export default function JobDetailPage() {
     },
   });
 
+  const { data: documentsData, isLoading: isLoadingDocuments } = useQuery({
+    queryKey: ['documents', jobId],
+    queryFn: async () => {
+      try {
+        const response = await api.GET('/jobs/clientuploads/{jobId}', {
+          params: {
+            path: {
+              jobId: jobId,
+            },
+          },
+        });
+        return (response.data?.responseObject?.documents || []) as Array<{
+          clientUploadId: string;
+          jobId: string;
+          s3Path: string;
+          fileName: string;
+          fileType: string;
+          notes: string | null;
+          createdAt: string;
+          updatedAt: string;
+          documentUrl: string;
+        }>;
+      } catch (error: any) {
+        if (error?.statusCode === 404) {
+          return [];
+        }
+        throw error;
+      }
+    },
+  });
+
   const { data: jobsData, isLoading } = useQuery({
     queryKey: ['jobs'],
     queryFn: async () => {
@@ -285,6 +305,9 @@ export default function JobDetailPage() {
   });
 
   const job = jobsData?.find((j) => j.jobId === jobId);
+
+  // Fetch payment draws from the job object (they're included in the job response)
+  const paymentDraws = (job as any)?.paymentDraws as PaymentDraw[] | undefined;
 
   if (isLoading) {
     return (
@@ -398,7 +421,7 @@ export default function JobDetailPage() {
     setIsCreatingSOW(true);
     setIsEditingSOW(false);
     sowForm.reset({
-      lineItems: [{ description: '', price: '' }],
+      lineItems: [{ description: '', price: '', startDate: '', endDate: '', contractor: '' }],
       notes: '',
     });
   };
@@ -411,6 +434,9 @@ export default function JobDetailPage() {
       lineItems: sowData.lineItems.map((item) => ({
         description: item.description,
         price: item.price ? item.price.toFixed(2) : '',
+        startDate: item.startDate ? formatDateOnlyForInput(item.startDate) : '',
+        endDate: item.endDate ? formatDateOnlyForInput(item.endDate) : '',
+        contractor: item.contractor || '',
       })),
       notes: sowData.notes || '',
     });
@@ -427,7 +453,7 @@ export default function JobDetailPage() {
     changeOrderForm.reset({
       lineItems: [{ description: '', price: '' }],
       notes: '',
-      customerNotified: false,
+      status: 'created',
     });
   };
 
@@ -440,7 +466,7 @@ export default function JobDetailPage() {
         price: item.price ? item.price.toFixed(2) : '',
       })),
       notes: changeOrder.notes || '',
-      customerNotified: changeOrder.customerNotified,
+      status: changeOrder.status,
     });
   };
 
@@ -448,6 +474,121 @@ export default function JobDetailPage() {
     setIsCreateChangeOrderOpen(false);
     setEditingChangeOrderId(null);
     changeOrderForm.reset();
+  };
+
+  const handleCreatePaymentDraw = () => {
+    setIsCreatePaymentDrawOpen(true);
+    setEditingPaymentDrawId(null);
+    setViewingPaymentDraw(null);
+    paymentDrawForm.reset({
+      paymentAmount: '',
+      expectedPaymentDate: '',
+      actualPaymentDate: null,
+      dateRequested: new Date().toISOString().split('T')[0],
+      status: 'future',
+      description: null,
+      images: [],
+      customerNotified: false,
+    });
+  };
+
+  const handleViewPaymentDraw = (paymentDraw: PaymentDraw) => {
+    setViewingPaymentDraw(paymentDraw);
+    setIsCreatePaymentDrawOpen(true);
+    setEditingPaymentDrawId(null);
+    paymentDrawForm.reset({
+      paymentAmount: paymentDraw.paymentAmount.toFixed(2),
+      expectedPaymentDate: formatDateOnlyForInput(paymentDraw.expectedPaymentDate),
+      actualPaymentDate: paymentDraw.actualPaymentDate
+        ? formatDateOnlyForInput(paymentDraw.actualPaymentDate)
+        : null,
+      dateRequested: formatDateOnlyForInput(paymentDraw.dateRequested),
+      status: paymentDraw.status,
+      description: paymentDraw.description || null,
+      images: paymentDraw.images || [],
+      customerNotified: (paymentDraw as any).customerNotified || false,
+    });
+  };
+
+  const handleEditPaymentDraw = (paymentDraw: PaymentDraw) => {
+    setEditingPaymentDrawId(paymentDraw.paymentDrawId);
+    setViewingPaymentDraw(null);
+    setIsCreatePaymentDrawOpen(true);
+    paymentDrawForm.reset({
+      paymentAmount: paymentDraw.paymentAmount.toFixed(2),
+      expectedPaymentDate: formatDateOnlyForInput(paymentDraw.expectedPaymentDate),
+      actualPaymentDate: paymentDraw.actualPaymentDate
+        ? formatDateOnlyForInput(paymentDraw.actualPaymentDate)
+        : null,
+      dateRequested: formatDateOnlyForInput(paymentDraw.dateRequested),
+      status: paymentDraw.status,
+      description: paymentDraw.description || null,
+      images: paymentDraw.images || [],
+      customerNotified: (paymentDraw as any).customerNotified || false,
+    });
+  };
+
+  const handleClosePaymentDrawModal = (open: boolean) => {
+    if (!open) {
+      setIsCreatePaymentDrawOpen(false);
+      setEditingPaymentDrawId(null);
+      setViewingPaymentDraw(null);
+      paymentDrawForm.reset();
+    }
+  };
+
+  const onSubmitPaymentDraw = async (data: PaymentDrawFormData) => {
+    setIsSubmitting(true);
+    try {
+      // Parse payment amount from string
+      const cleaned = data.paymentAmount.replace(/[^0-9.-]/g, '');
+      const paymentAmount = cleaned === '' ? 0 : parseFloat(cleaned) || 0;
+
+      const body = {
+        paymentAmount,
+        expectedPaymentDate: new Date(data.expectedPaymentDate).toISOString(),
+        actualPaymentDate: data.actualPaymentDate ? new Date(data.actualPaymentDate).toISOString() : null,
+        dateRequested: data.dateRequested ? new Date(data.dateRequested).toISOString() : null,
+        status: data.status,
+        description: data.description || null,
+        images: data.images || [],
+        customerNotified: data.customerNotified || false,
+      };
+
+      const currentJob = jobsData?.find((j) => j.jobId === jobId);
+      if (!currentJob) {
+        throw new Error('Job not found');
+      }
+
+      if (editingPaymentDrawId) {
+        await api.PATCH('/jobs/paymentdraws/:paymentDrawId/{jobId}/{paymentDrawId}', {
+          params: {
+            path: {
+              jobId: currentJob.jobId,
+              paymentDrawId: editingPaymentDrawId,
+            },
+          },
+          body: body as any,
+        });
+      } else {
+        await api.PUT('/jobs/paymentdraws/{jobId}', {
+          params: {
+            path: {
+              jobId: currentJob.jobId,
+            },
+          },
+          body: body as any,
+        });
+      }
+
+      queryClient.invalidateQueries({ queryKey: ['jobs'] });
+      handleClosePaymentDrawModal(false);
+    } catch (error) {
+      console.error('Payment draw submit error:', error);
+      alert('Failed to save payment draw. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const onSubmitChangeOrder = async (data: ChangeOrderFormData) => {
@@ -469,7 +610,7 @@ export default function JobDetailPage() {
           body: {
             lineItems,
             notes: data.notes || null,
-            customerNotified: data.customerNotified,
+            status: data.status,
           } as any,
         });
       } else {
@@ -482,7 +623,7 @@ export default function JobDetailPage() {
           body: {
             lineItems,
             notes: data.notes || undefined,
-            customerNotified: data.customerNotified,
+            status: data.status,
           } as any,
         });
       }
@@ -496,16 +637,24 @@ export default function JobDetailPage() {
     }
   };
 
-  const onSubmitSOW = async (data: StatementOfWorkFormData) => {
+  const onSubmitSOW = async (data: ScopeOfWorkFormData) => {
     setIsSubmitting(true);
     try {
+      const formatDateToISO = (dateStr: string | undefined) => {
+        if (!dateStr || dateStr === '') return null;
+        return new Date(dateStr + 'T00:00:00').toISOString();
+      };
+
       const lineItems = data.lineItems.map((item) => ({
         description: item.description,
         price: item.price ? parseFloat(item.price) : null,
+        startDate: formatDateToISO(item.startDate),
+        endDate: formatDateToISO(item.endDate),
+        contractor: item.contractor || null,
       }));
 
       if (isCreatingSOW) {
-        await api.POST('/jobs/statementofwork/{jobId}', {
+        await api.POST('/jobs/scopeofwork/{jobId}', {
           params: {
             path: {
               jobId: job.jobId,
@@ -517,7 +666,7 @@ export default function JobDetailPage() {
           } as any,
         });
       } else {
-        await api.PATCH('/jobs/statementofwork/{jobId}', {
+        await api.PATCH('/jobs/scopeofwork/{jobId}', {
           params: {
             path: {
               jobId: job.jobId,
@@ -529,12 +678,167 @@ export default function JobDetailPage() {
           } as any,
         });
       }
-      queryClient.invalidateQueries({ queryKey: ['statementOfWork', jobId] });
+      queryClient.invalidateQueries({ queryKey: ['scopeOfWork', jobId] });
       setIsCreatingSOW(false);
       setIsEditingSOW(false);
     } catch (error) {
-      console.error('Update statement of work error:', error);
-      alert('Failed to save statement of work. Please try again.');
+      console.error('Update scope of work error:', error);
+      alert('Failed to save scope of work. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleUploadDocument = () => {
+    setIsDocumentUploadOpen(true);
+    setSelectedFile(null);
+    documentForm.reset({
+      fileName: '',
+      fileType: '',
+      fileData: '',
+      notes: null,
+    });
+  };
+
+  const handleFileSelect = (file: File) => {
+    setSelectedFile(file);
+  };
+
+  const handleCloseDocumentModal = () => {
+    setIsDocumentUploadOpen(false);
+    setSelectedFile(null);
+    documentForm.reset();
+  };
+
+  const onSubmitDocument = async (data: {
+    fileName: string;
+    fileType: string;
+    fileData: string;
+    notes?: string | null;
+  }) => {
+    setIsSubmitting(true);
+    try {
+      await api.PUT('/jobs/clientuploads/{jobId}', {
+        params: {
+          path: {
+            jobId: job.jobId,
+          },
+        },
+        body: {
+          fileName: data.fileName,
+          fileType: data.fileType,
+          fileData: data.fileData,
+          notes: data.notes || null,
+        } as any,
+      });
+      queryClient.invalidateQueries({ queryKey: ['documents', jobId] });
+      handleCloseDocumentModal();
+    } catch (error) {
+      console.error('Upload document error:', error);
+      alert('Failed to upload document. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteDocument = async (clientUploadId: string) => {
+    if (!confirm('Are you sure you want to delete this document?')) {
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      await api.DELETE('/jobs/clientuploads/{jobId}/{clientUploadId}', {
+        params: {
+          path: {
+            jobId: job.jobId,
+            clientUploadId: clientUploadId,
+          },
+        },
+      });
+      queryClient.invalidateQueries({ queryKey: ['documents', jobId] });
+    } catch (error) {
+      console.error('Delete document error:', error);
+      alert('Failed to delete document. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDownloadDocument = (documentUrl: string, fileName: string) => {
+    window.open(documentUrl, '_blank');
+  };
+
+  const handleViewDocument = (document: {
+    clientUploadId: string;
+    fileName: string;
+    fileType: string;
+    documentUrl: string;
+    notes: string | null;
+  }) => {
+    setViewingDocument(document);
+  };
+
+  const handleCloseDocumentViewer = () => {
+    setViewingDocument(null);
+  };
+
+  const handleUpdateJobDetails = () => {
+    setIsJobDetailsUpdateOpen(true);
+    jobDetailsUpdateForm.reset({
+      description: job.description || '',
+      addressLine1: job.addressLine1 || '',
+      addressLine2: job.addressLine2 || '',
+      city: job.city || '',
+      state: job.state || '',
+      postalCode: job.postalCode || '',
+      country: job.country || '',
+      status: job.status,
+      budget: formatBudgetForInput(job.budget),
+    });
+  };
+
+  const handleCloseJobDetailsUpdate = () => {
+    setIsJobDetailsUpdateOpen(false);
+    jobDetailsUpdateForm.reset();
+  };
+
+  const onSubmitJobDetailsUpdate = async (data: {
+    description: string;
+    addressLine1: string;
+    addressLine2: string;
+    city: string;
+    state: string;
+    postalCode: string;
+    country: string;
+    status: 'planned' | 'in-progress' | 'completed' | 'cancelled' | 'on-hold';
+    budget: string;
+  }) => {
+    setIsSubmitting(true);
+    try {
+      const budgetValue = data.budget ? parseBudgetFromInput(data.budget) : null;
+      await api.PATCH('/jobs/{jobId}', {
+        params: {
+          path: {
+            jobId: job.jobId,
+          },
+        },
+        body: {
+          description: data.description || null,
+          addressLine1: data.addressLine1 || null,
+          addressLine2: data.addressLine2 || null,
+          city: data.city || null,
+          state: data.state || null,
+          postalCode: data.postalCode || null,
+          country: data.country || null,
+          status: data.status,
+          budget: budgetValue,
+        } as any,
+      });
+      queryClient.invalidateQueries({ queryKey: ['jobs'] });
+      handleCloseJobDetailsUpdate();
+    } catch (error) {
+      console.error('Update job details error:', error);
+      alert('Failed to update job details. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -555,7 +859,7 @@ export default function JobDetailPage() {
           },
         },
         body: {
-          budget: data.budget ? parseFloat(parseBudgetFromInput(data.budget)) : null,
+          budget: data.budget ? parseBudgetFromInput(data.budget) : null,
           estimatedStartDate: formatDateToISO(data.estimatedStartDate) as string | null | undefined,
           estimatedEndDate: formatDateToISO(data.estimatedEndDate) as string | null | undefined,
           actualStartDate: formatDateToISO(data.actualStartDate) as string | null | undefined,
@@ -588,703 +892,128 @@ export default function JobDetailPage() {
           </div>
           {job.jobNumber && <p className="text-slate-600">Job #{job.jobNumber}</p>}
         </div>
-        <Button onClick={handleCreateChangeOrder}>
-          <Plus className="mr-2 h-4 w-4" />
-          Create Change Order
-        </Button>
       </div>
 
-      {job.customer && (
-        <Card className={editingSection === 'address' ? 'ring-2 ring-primary' : ''}>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>Customer & Address</CardTitle>
-              {editingSection === 'address' ? (
-                <div className="flex gap-2">
-                  <Button size="sm" variant="outline" onClick={handleCancel} disabled={isSubmitting}>
-                    Cancel
-                  </Button>
-                  <Button
-                    size="sm"
-                    onClick={addressForm.handleSubmit(onSubmitAddress)}
-                    disabled={!addressForm.formState.isDirty || isSubmitting}
-                  >
-                    {isSubmitting ? 'Saving...' : 'Save'}
-                  </Button>
-                </div>
-              ) : (
-                <Button size="sm" variant="outline" onClick={handleEditAddress}>
-                  Edit
-                </Button>
-              )}
-            </div>
-          </CardHeader>
-          <CardContent className="flex flex-wrap gap-6">
-            <div className="min-w-[calc(33.333%-1rem)] flex-1">
-              <div className="text-sm text-slate-500">Customer</div>
-              <Link
-                href={`/customers/${job.customerId}`}
-                className="font-medium text-primary hover:underline"
-              >
-                {job.customer.firstName} {job.customer.lastName}
-              </Link>
-              <p className="mt-1 text-sm text-slate-600">{job.customer.email}</p>
-            </div>
-            {editingSection === 'address' ? (
-              <form
-                onSubmit={addressForm.handleSubmit(onSubmitAddress)}
-                className="flex flex-1 flex-wrap gap-6"
-              >
-                <div className="min-w-[calc(33.333%-1rem)] flex-1">
-                  <Label htmlFor="addressLine1" className="text-sm text-slate-500">
-                    Address Line 1
-                  </Label>
-                  <Input
-                    id="addressLine1"
-                    {...addressForm.register('addressLine1')}
-                    className="mt-1"
-                    placeholder="Street address"
-                  />
-                </div>
-                <div className="min-w-[calc(33.333%-1rem)] flex-1">
-                  <Label htmlFor="addressLine2" className="text-sm text-slate-500">
-                    Address Line 2
-                  </Label>
-                  <Input
-                    id="addressLine2"
-                    {...addressForm.register('addressLine2')}
-                    className="mt-1"
-                    placeholder="Apartment, suite, etc."
-                  />
-                </div>
-                <div className="min-w-[calc(33.333%-1rem)] flex-1">
-                  <Label htmlFor="city" className="text-sm text-slate-500">
-                    City
-                  </Label>
-                  <Input id="city" {...addressForm.register('city')} className="mt-1" placeholder="City" />
-                </div>
-                <div className="min-w-[calc(33.333%-1rem)] flex-1">
-                  <Label htmlFor="state" className="text-sm text-slate-500">
-                    State
-                  </Label>
-                  <Input id="state" {...addressForm.register('state')} className="mt-1" placeholder="State" />
-                </div>
-                <div className="min-w-[calc(33.333%-1rem)] flex-1">
-                  <Label htmlFor="postalCode" className="text-sm text-slate-500">
-                    Postal Code
-                  </Label>
-                  <Input
-                    id="postalCode"
-                    {...addressForm.register('postalCode')}
-                    className="mt-1"
-                    placeholder="Postal code"
-                  />
-                </div>
-                <div className="min-w-[calc(33.333%-1rem)] flex-1">
-                  <Label htmlFor="country" className="text-sm text-slate-500">
-                    Country
-                  </Label>
-                  <Input
-                    id="country"
-                    {...addressForm.register('country')}
-                    className="mt-1"
-                    placeholder="Country"
-                  />
-                </div>
-              </form>
-            ) : (
-              (job.addressLine1 || job.city || job.state) && (
-                <div className="min-w-[calc(33.333%-1rem)] flex-1">
-                  <div className="text-sm text-slate-500">Job Address</div>
-                  <div className="mt-1 space-y-1">
-                    {job.addressLine1 && <div className="font-medium">{job.addressLine1}</div>}
-                    {job.addressLine2 && <div>{job.addressLine2}</div>}
-                    {(job.city || job.state || job.postalCode) && (
-                      <div>{[job.city, job.state, job.postalCode].filter(Boolean).join(', ')}</div>
-                    )}
-                    {job.country && <div>{job.country}</div>}
-                  </div>
-                </div>
-              )
-            )}
-          </CardContent>
-        </Card>
-      )}
+      <JobHeaderCard
+        job={job}
+        onCreateChangeOrder={handleCreateChangeOrder}
+        onUploadDocument={handleUploadDocument}
+        onUpdateJobDetails={handleUpdateJobDetails}
+      />
 
       <div className="flex flex-wrap gap-6">
-        <Card
-          className={`min-w-[400px] flex-1 ${editingSection === 'description' ? 'ring-2 ring-primary' : ''}`}
-        >
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>Description</CardTitle>
-              {editingSection === 'description' ? (
-                <div className="flex gap-2">
-                  <Button size="sm" variant="outline" onClick={handleCancel} disabled={isSubmitting}>
-                    Cancel
-                  </Button>
-                  <Button
-                    size="sm"
-                    onClick={descriptionForm.handleSubmit(onSubmitDescription)}
-                    disabled={!descriptionForm.formState.isDirty || isSubmitting}
-                  >
-                    {isSubmitting ? 'Saving...' : 'Save'}
-                  </Button>
-                </div>
-              ) : (
-                <Button size="sm" variant="outline" onClick={handleEditDescription}>
-                  Edit
-                </Button>
-              )}
-            </div>
-          </CardHeader>
-          <CardContent>
-            {editingSection === 'description' ? (
-              <form onSubmit={descriptionForm.handleSubmit(onSubmitDescription)}>
-                <textarea
-                  {...descriptionForm.register('description')}
-                  className="flex min-h-[120px] w-full rounded-md border border-slate-200 bg-white px-3 py-2
-                    text-sm ring-offset-white placeholder:text-slate-500 focus-visible:ring-2
-                    focus-visible:ring-slate-950 focus-visible:ring-offset-2 focus-visible:outline-none
-                    disabled:cursor-not-allowed disabled:opacity-50"
-                  placeholder="Add a description for this job..."
-                  rows={6}
-                />
-              </form>
-            ) : (
-              <p className="whitespace-pre-wrap text-slate-700">{job.description || 'No description'}</p>
-            )}
-          </CardContent>
-        </Card>
+        <DescriptionCard
+          job={job}
+          editingSection={editingSection}
+          isSubmitting={isSubmitting}
+          descriptionForm={descriptionForm}
+          onEdit={handleEditDescription}
+          onCancel={handleCancel}
+          onSubmit={onSubmitDescription}
+        />
 
-        <Card className={`min-w-[400px] flex-1 ${editingSection === 'details' ? 'ring-2 ring-primary' : ''}`}>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>Job Details</CardTitle>
-              {editingSection === 'details' ? (
-                <div className="flex gap-2">
-                  <Button size="sm" variant="outline" onClick={handleCancel} disabled={isSubmitting}>
-                    Cancel
-                  </Button>
-                  <Button
-                    size="sm"
-                    onClick={jobDetailsForm.handleSubmit(onSubmitDetails)}
-                    disabled={!jobDetailsForm.formState.isDirty || isSubmitting}
-                  >
-                    {isSubmitting ? 'Saving...' : 'Save'}
-                  </Button>
-                </div>
-              ) : (
-                <Button size="sm" variant="outline" onClick={handleEditDetails}>
-                  Edit
-                </Button>
-              )}
-            </div>
-          </CardHeader>
-          <CardContent className="flex flex-wrap gap-6">
-            {editingSection === 'details' ? (
-              <form
-                onSubmit={jobDetailsForm.handleSubmit(onSubmitDetails)}
-                className="flex w-full flex-wrap gap-6"
-              >
-                <div className="min-w-[calc(33.333%-1rem)] flex-1">
-                  <Label htmlFor="budget" className="text-sm text-slate-500">
-                    Budget
-                  </Label>
-                  <div className="relative mt-1">
-                    <span className="absolute top-1/2 left-3 -translate-y-1/2 text-slate-500">$</span>
-                    <Input
-                      id="budget"
-                      {...jobDetailsForm.register('budget', {
-                        onChange: (e) => {
-                          const value = parseBudgetFromInput(e.target.value);
-                          jobDetailsForm.setValue('budget', value, { shouldDirty: true });
-                          e.target.value = value;
-                        },
-                      })}
-                      className="pl-7"
-                      placeholder="0.00"
-                      type="text"
-                      inputMode="decimal"
-                    />
-                  </div>
-                </div>
-                <div className="min-w-[calc(33.333%-1rem)] flex-1">
-                  <Label htmlFor="estimatedStartDate" className="text-sm text-slate-500">
-                    Estimated Start Date
-                  </Label>
-                  <Input
-                    id="estimatedStartDate"
-                    type="date"
-                    {...jobDetailsForm.register('estimatedStartDate')}
-                    className="mt-1"
-                  />
-                </div>
-                <div className="min-w-[calc(33.333%-1rem)] flex-1">
-                  <Label htmlFor="estimatedEndDate" className="text-sm text-slate-500">
-                    Estimated End Date
-                  </Label>
-                  <Input
-                    id="estimatedEndDate"
-                    type="date"
-                    {...jobDetailsForm.register('estimatedEndDate')}
-                    className="mt-1"
-                  />
-                </div>
-                <div className="min-w-[calc(33.333%-1rem)] flex-1">
-                  <Label htmlFor="actualStartDate" className="text-sm text-slate-500">
-                    Actual Start Date
-                  </Label>
-                  <Input
-                    id="actualStartDate"
-                    type="date"
-                    {...jobDetailsForm.register('actualStartDate')}
-                    className="mt-1"
-                  />
-                </div>
-                <div className="min-w-[calc(33.333%-1rem)] flex-1">
-                  <Label htmlFor="actualEndDate" className="text-sm text-slate-500">
-                    Actual End Date
-                  </Label>
-                  <Input
-                    id="actualEndDate"
-                    type="date"
-                    {...jobDetailsForm.register('actualEndDate')}
-                    className="mt-1"
-                  />
-                </div>
-              </form>
-            ) : (
-              <>
-                <div className="min-w-[calc(33.333%-1rem)] flex-1">
-                  <div className="text-sm text-slate-500">Budget</div>
-                  <div className="text-lg font-medium">{formatCurrency(job.budget)}</div>
-                </div>
-                <div className="min-w-[calc(33.333%-1rem)] flex-1">
-                  <div className="text-sm text-slate-500">Estimated Start Date</div>
-                  <div className="font-medium">{formatDate(job.estimatedStartDate)}</div>
-                </div>
-                <div className="min-w-[calc(33.333%-1rem)] flex-1">
-                  <div className="text-sm text-slate-500">Estimated End Date</div>
-                  <div className="font-medium">{formatDate(job.estimatedEndDate)}</div>
-                </div>
-                {job.actualStartDate && (
-                  <div className="min-w-[calc(33.333%-1rem)] flex-1">
-                    <div className="text-sm text-slate-500">Actual Start Date</div>
-                    <div className="font-medium">{formatDate(job.actualStartDate)}</div>
-                  </div>
-                )}
-                {job.actualEndDate && (
-                  <div className="min-w-[calc(33.333%-1rem)] flex-1">
-                    <div className="text-sm text-slate-500">Actual End Date</div>
-                    <div className="font-medium">{formatDate(job.actualEndDate)}</div>
-                  </div>
-                )}
-              </>
-            )}
-          </CardContent>
-        </Card>
+        <JobDetailsCard
+          job={job}
+          editingSection={editingSection}
+          isSubmitting={isSubmitting}
+          jobDetailsForm={jobDetailsForm}
+          onEdit={handleEditDetails}
+          onCancel={handleCancel}
+          onSubmit={onSubmitDetails}
+        />
       </div>
 
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>Statement of Work</CardTitle>
-            {!isLoadingSOW && !sowData && !isCreatingSOW && (
-              <Button size="sm" onClick={handleCreateSOW}>
-                <Plus className="mr-2 h-4 w-4" />
-                Create Statement of Work
-              </Button>
-            )}
-            {!isLoadingSOW && sowData && !isEditingSOW && !isCreatingSOW && (
-              <Button size="sm" variant="outline" onClick={handleEditSOW}>
-                Edit
-              </Button>
-            )}
-            {(isCreatingSOW || isEditingSOW) && (
-              <div className="flex gap-2">
-                <Button size="sm" variant="outline" onClick={handleCancelSOW} disabled={isSubmitting}>
-                  Cancel
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={sowForm.handleSubmit(onSubmitSOW)}
-                  disabled={!sowForm.formState.isDirty || isSubmitting}
-                >
-                  {isSubmitting ? 'Saving...' : 'Save'}
-                </Button>
-              </div>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent>
-          {isLoadingSOW ? (
-            <div className="text-slate-500">Loading statement of work...</div>
-          ) : isCreatingSOW || isEditingSOW ? (
-            <form onSubmit={sowForm.handleSubmit(onSubmitSOW)} className="space-y-6">
-              <div>
-                <Label className="text-sm font-medium">Line Items</Label>
-                <div className="mt-2 space-y-4">
-                  {sowForm.watch('lineItems').map((item, index) => (
-                    <div key={index} className="flex items-start gap-4">
-                      <div className="flex-1 space-y-2">
-                        <Label htmlFor={`lineItems.${index}.description`} className="text-sm text-slate-500">
-                          Description
-                        </Label>
-                        <Input
-                          id={`lineItems.${index}.description`}
-                          {...sowForm.register(`lineItems.${index}.description`)}
-                          placeholder="Item description"
-                        />
-                      </div>
-                      <div className="w-32 space-y-2">
-                        <Label htmlFor={`lineItems.${index}.price`} className="text-sm text-slate-500">
-                          Price
-                        </Label>
-                        <div className="relative">
-                          <span className="absolute top-1/2 left-3 -translate-y-1/2 text-slate-500">$</span>
-                          <Input
-                            id={`lineItems.${index}.price`}
-                            {...sowForm.register(`lineItems.${index}.price`)}
-                            className="pl-7"
-                            placeholder="0.00"
-                            type="text"
-                            inputMode="decimal"
-                          />
-                        </div>
-                      </div>
-                      {sowForm.watch('lineItems').length > 1 && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="mt-8"
-                          onClick={() => {
-                            const currentItems = sowForm.getValues('lineItems');
-                            sowForm.setValue(
-                              'lineItems',
-                              currentItems.filter((_, i) => i !== index),
-                              { shouldDirty: true }
-                            );
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4 text-red-500" />
-                        </Button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="mt-4"
-                  onClick={() => {
-                    const currentItems = sowForm.getValues('lineItems');
-                    sowForm.setValue('lineItems', [...currentItems, { description: '', price: '' }], {
-                      shouldDirty: true,
-                    });
-                  }}
-                >
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Line Item
-                </Button>
-              </div>
-              <div>
-                <Label htmlFor="notes" className="text-sm font-medium">
-                  Notes
-                </Label>
-                <textarea
-                  id="notes"
-                  {...sowForm.register('notes')}
-                  className="mt-2 flex min-h-[100px] w-full rounded-md border border-slate-200 bg-white px-3
-                    py-2 text-sm ring-offset-white placeholder:text-slate-500 focus-visible:ring-2
-                    focus-visible:ring-slate-950 focus-visible:ring-offset-2 focus-visible:outline-none
-                    disabled:cursor-not-allowed disabled:opacity-50"
-                  placeholder="Additional notes..."
-                  rows={4}
-                />
-              </div>
-            </form>
-          ) : sowData ? (
-            <div className="space-y-4">
-              <div>
-                <h4 className="mb-3 text-sm font-medium">Line Items</h4>
-                <div className="space-y-3">
-                  {sowData.lineItems.map((item, index) => (
-                    <div
-                      key={index}
-                      className="flex items-start justify-between border-b border-slate-200 pb-3"
-                    >
-                      <div className="flex-1">
-                        <p className="text-slate-700">{item.description}</p>
-                      </div>
-                      <div className="w-32 text-right">
-                        <p className="font-medium">
-                          {item.price !== null && item.price !== undefined
-                            ? new Intl.NumberFormat('en-US', {
-                                style: 'currency',
-                                currency: 'USD',
-                              }).format(item.price)
-                            : 'N/A'}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <div className="mt-4 flex justify-end">
-                  <div className="text-sm">
-                    <span className="text-slate-500">Total: </span>
-                    <span className="text-lg font-bold">
-                      {new Intl.NumberFormat('en-US', {
-                        style: 'currency',
-                        currency: 'USD',
-                      }).format(sowData.lineItems.reduce((sum, item) => sum + (item.price || 0), 0))}
-                    </span>
-                  </div>
-                </div>
-              </div>
-              {sowData.notes && (
-                <div>
-                  <h4 className="mb-2 text-sm font-medium">Notes</h4>
-                  <p className="whitespace-pre-wrap text-slate-700">{sowData.notes}</p>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="py-12 text-center">
-              <p className="mb-4 text-slate-500">No statement of work has been created yet.</p>
-              <Button onClick={handleCreateSOW}>
-                <Plus className="mr-2 h-4 w-4" />
-                Create Statement of Work
-              </Button>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      <TimelineCard
+        sowData={sowData}
+        changeOrders={changeOrdersData}
+        paymentDraws={paymentDraws}
+        isLoading={isLoadingSOW || isLoadingChangeOrders}
+      />
 
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>Change Orders</CardTitle>
-            {changeOrdersData && changeOrdersData.length > 0 && (
-              <div className="text-sm">
-                <span className="text-slate-500">Total: </span>
-                <span className="text-lg font-bold">
-                  {new Intl.NumberFormat('en-US', {
-                    style: 'currency',
-                    currency: 'USD',
-                  }).format(
-                    changeOrdersData.reduce(
-                      (sum, changeOrder) =>
-                        sum + changeOrder.lineItems.reduce((itemSum, item) => itemSum + (item.price || 0), 0),
-                      0
-                    )
-                  )}
-                </span>
-              </div>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent>
-          {isLoadingChangeOrders ? (
-            <div className="text-slate-500">Loading change orders...</div>
-          ) : changeOrdersData && changeOrdersData.length > 0 ? (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-slate-200">
-                    <th className="px-4 py-3 text-left text-sm font-medium text-slate-700">Change Order</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-slate-700">Creation Date</th>
-                    <th className="px-4 py-3 text-right text-sm font-medium text-slate-700">Total Price</th>
-                    <th className="px-4 py-3 text-center text-sm font-medium text-slate-700">
-                      Customer Notified
-                    </th>
-                    <th className="px-4 py-3 text-right text-sm font-medium text-slate-700">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {changeOrdersData.map((changeOrder) => {
-                    const total = changeOrder.lineItems.reduce((sum, item) => sum + (item.price || 0), 0);
-                    return (
-                      <tr
-                        key={changeOrder.changeOrderId}
-                        className="border-b border-slate-100 hover:bg-slate-50"
-                      >
-                        <td className="px-4 py-3 text-sm text-slate-900">
-                          #{changeOrder.changeOrderId.slice(-8)}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-slate-700">
-                          {formatDate(changeOrder.createdAt)}
-                        </td>
-                        <td className="px-4 py-3 text-right text-sm font-medium text-slate-900">
-                          {new Intl.NumberFormat('en-US', {
-                            style: 'currency',
-                            currency: 'USD',
-                          }).format(total)}
-                        </td>
-                        <td className="px-4 py-3 text-center">
-                          {changeOrder.customerNotified ? (
-                            <span
-                              className="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-0.5
-                                text-xs font-medium text-emerald-800"
-                            >
-                              Yes
-                            </span>
-                          ) : (
-                            <span
-                              className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5
-                                text-xs font-medium text-slate-800"
-                            >
-                              No
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-4 py-3 text-right">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleEditChangeOrder(changeOrder)}
-                          >
-                            <Edit className="mr-2 h-4 w-4" />
-                            Edit
-                          </Button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <div className="py-12 text-center">
-              <p className="text-slate-500">No change orders have been created yet.</p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      <ScopeOfWorkCard
+        isLoading={isLoadingSOW}
+        sowData={sowData}
+        isCreating={isCreatingSOW}
+        isEditing={isEditingSOW}
+        isSubmitting={isSubmitting}
+        sowForm={sowForm}
+        onCreate={handleCreateSOW}
+        onEdit={handleEditSOW}
+        onCancel={handleCancelSOW}
+        onSubmit={onSubmitSOW}
+      />
 
-      <Dialog open={isCreateChangeOrderOpen} onOpenChange={handleCloseChangeOrderModal}>
-        <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{editingChangeOrderId ? 'Edit Change Order' : 'Create Change Order'}</DialogTitle>
-            <DialogDescription>
-              {editingChangeOrderId
-                ? 'Update the change order details below.'
-                : 'Add line items and details for the change order.'}
-            </DialogDescription>
-          </DialogHeader>
-          <form onSubmit={changeOrderForm.handleSubmit(onSubmitChangeOrder)} className="space-y-6">
-            <div>
-              <Label className="text-sm font-medium">Line Items</Label>
-              <div className="mt-2 space-y-4">
-                {changeOrderForm.watch('lineItems').map((item, index) => (
-                  <div key={index} className="flex items-start gap-4">
-                    <div className="flex-1 space-y-2">
-                      <Label htmlFor={`co-lineItems.${index}.description`} className="text-sm text-slate-500">
-                        Description
-                      </Label>
-                      <Input
-                        id={`co-lineItems.${index}.description`}
-                        {...changeOrderForm.register(`lineItems.${index}.description`)}
-                        placeholder="Item description"
-                      />
-                    </div>
-                    <div className="w-32 space-y-2">
-                      <Label htmlFor={`co-lineItems.${index}.price`} className="text-sm text-slate-500">
-                        Price
-                      </Label>
-                      <div className="relative">
-                        <span className="absolute top-1/2 left-3 -translate-y-1/2 text-slate-500">$</span>
-                        <Input
-                          id={`co-lineItems.${index}.price`}
-                          {...changeOrderForm.register(`lineItems.${index}.price`)}
-                          className="pl-7"
-                          placeholder="0.00"
-                          type="text"
-                          inputMode="decimal"
-                        />
-                      </div>
-                    </div>
-                    {changeOrderForm.watch('lineItems').length > 1 && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="mt-8"
-                        onClick={() => {
-                          const currentItems = changeOrderForm.getValues('lineItems');
-                          changeOrderForm.setValue(
-                            'lineItems',
-                            currentItems.filter((_, i) => i !== index),
-                            { shouldDirty: true }
-                          );
-                        }}
-                      >
-                        <Trash2 className="h-4 w-4 text-red-500" />
-                      </Button>
-                    )}
-                  </div>
-                ))}
-              </div>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="mt-4"
-                onClick={() => {
-                  const currentItems = changeOrderForm.getValues('lineItems');
-                  changeOrderForm.setValue('lineItems', [...currentItems, { description: '', price: '' }], {
-                    shouldDirty: true,
-                  });
-                }}
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                Add Line Item
-              </Button>
-            </div>
-            <div>
-              <Label htmlFor="co-notes" className="text-sm font-medium">
-                Notes
-              </Label>
-              <textarea
-                id="co-notes"
-                {...changeOrderForm.register('notes')}
-                className="mt-2 flex min-h-[100px] w-full rounded-md border border-slate-200 bg-white px-3
-                  py-2 text-sm ring-offset-white placeholder:text-slate-500 focus-visible:ring-2
-                  focus-visible:ring-slate-950 focus-visible:ring-offset-2 focus-visible:outline-none
-                  disabled:cursor-not-allowed disabled:opacity-50"
-                placeholder="Additional notes..."
-                rows={4}
-              />
-            </div>
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="co-customerNotified"
-                {...changeOrderForm.register('customerNotified')}
-                className="h-4 w-4 rounded border-slate-300 text-primary focus:ring-2 focus:ring-primary"
-              />
-              <Label htmlFor="co-customerNotified" className="text-sm font-medium">
-                Customer Notified
-              </Label>
-            </div>
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleCloseChangeOrderModal}
-                disabled={isSubmitting}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={!changeOrderForm.formState.isDirty || isSubmitting}>
-                {isSubmitting ? 'Saving...' : editingChangeOrderId ? 'Update' : 'Create'}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <ChangeOrdersCard
+        isLoading={isLoadingChangeOrders}
+        changeOrders={changeOrdersData}
+        onEdit={handleEditChangeOrder}
+      />
+
+      <PaymentDrawsCard
+        paymentDraws={paymentDraws}
+        onView={handleViewPaymentDraw}
+        onEdit={handleEditPaymentDraw}
+        onCreate={handleCreatePaymentDraw}
+      />
+
+      <DocumentsCard
+        isLoading={isLoadingDocuments}
+        documents={documentsData}
+        onUpload={handleUploadDocument}
+        onDelete={handleDeleteDocument}
+        onDownload={handleDownloadDocument}
+        onView={handleViewDocument}
+      />
+
+      <ChangeOrderModal
+        open={isCreateChangeOrderOpen}
+        onOpenChange={handleCloseChangeOrderModal}
+        isEditing={!!editingChangeOrderId}
+        isSubmitting={isSubmitting}
+        changeOrderForm={changeOrderForm}
+        onSubmit={onSubmitChangeOrder}
+      />
+
+      <PaymentDrawModal
+        open={isCreatePaymentDrawOpen}
+        onOpenChange={handleClosePaymentDrawModal}
+        isEditing={!!editingPaymentDrawId}
+        isViewing={!!viewingPaymentDraw}
+        viewingPaymentDraw={viewingPaymentDraw}
+        isSubmitting={isSubmitting}
+        paymentDrawForm={paymentDrawForm}
+        onSubmit={onSubmitPaymentDraw}
+        onEdit={() => {
+          if (viewingPaymentDraw) {
+            handleEditPaymentDraw(viewingPaymentDraw);
+          }
+        }}
+      />
+
+      <DocumentUploadModal
+        open={isDocumentUploadOpen}
+        onOpenChange={handleCloseDocumentModal}
+        isSubmitting={isSubmitting}
+        documentForm={documentForm}
+        onSubmit={onSubmitDocument}
+        onFileSelect={handleFileSelect}
+        selectedFile={selectedFile}
+      />
+
+      <DocumentViewerModal
+        open={!!viewingDocument}
+        onOpenChange={handleCloseDocumentViewer}
+        document={viewingDocument}
+        onDownload={handleDownloadDocument}
+      />
+
+      <JobDetailsUpdateModal
+        open={isJobDetailsUpdateOpen}
+        onOpenChange={handleCloseJobDetailsUpdate}
+        isSubmitting={isSubmitting}
+        jobDetailsForm={jobDetailsUpdateForm}
+        onSubmit={onSubmitJobDetailsUpdate}
+      />
     </div>
   );
 }

@@ -60,7 +60,7 @@ export default function Home() {
   const pendingChangeOrders = useMemo(() => {
     const allChangeOrders = changeOrdersQueries
       .flatMap((query) => query.data || [])
-      .filter((co: ChangeOrder & { jobTitle: string; jobNumber: string | null }) => !co.customerNotified);
+      .filter((co: ChangeOrder & { jobTitle: string; jobNumber: string | null }) => co.status !== 'paid');
     return allChangeOrders;
   }, [changeOrdersQueries]);
 
@@ -135,7 +135,7 @@ export default function Home() {
           <CardContent>
             <p className="mb-4 text-sm text-yellow-800">
               You have {pendingChangeOrders.length} change order{pendingChangeOrders.length !== 1 ? 's' : ''}{' '}
-              that need to be notified to customers.
+              that need to be sent to customers.
             </p>
             <div className="space-y-3">
               {pendingChangeOrders

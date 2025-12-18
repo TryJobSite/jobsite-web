@@ -538,6 +538,20 @@ export interface paths {
                                         updatedAt: string;
                                         deletedAt: string | null;
                                     };
+                                    paymentDraws: {
+                                        paymentDrawId: string;
+                                        jobId: string;
+                                        paymentAmount: number;
+                                        expectedPaymentDate: string;
+                                        actualPaymentDate: string | null;
+                                        dateRequested: string | null;
+                                        /** @enum {string} */
+                                        status: "future" | "requested" | "paid";
+                                        description: string | null;
+                                        images: string[];
+                                        createdAt: string;
+                                        updatedAt: string;
+                                    }[];
                                 }[];
                             };
                             statusCode: number;
@@ -774,7 +788,7 @@ export interface paths {
         };
         trace?: never;
     };
-    "/jobs/statementofwork/{jobId}": {
+    "/jobs/scopeofwork/{jobId}": {
         parameters: {
             query?: never;
             header?: never;
@@ -802,13 +816,16 @@ export interface paths {
                             success: boolean;
                             message: string;
                             responseObject: {
-                                statementOfWork: {
-                                    statementOfWorkId: string;
+                                scopeOfWork: {
+                                    scopeOfWorkId: string;
                                     contractorId: string;
                                     jobId: string;
                                     lineItems: {
                                         description: string;
                                         price?: number | null;
+                                        startDate?: string | null;
+                                        endDate?: string | null;
+                                        contractor?: string | null;
                                     }[];
                                     notes: string | null;
                                     createdAt: string;
@@ -837,6 +854,9 @@ export interface paths {
                         lineItems: {
                             description: string;
                             price?: number | null;
+                            startDate?: string | null;
+                            endDate?: string | null;
+                            contractor?: string | null;
                         }[];
                         notes?: string;
                     };
@@ -853,13 +873,16 @@ export interface paths {
                             success: boolean;
                             message: string;
                             responseObject: {
-                                statementOfWork: {
-                                    statementOfWorkId: string;
+                                scopeOfWork: {
+                                    scopeOfWorkId: string;
                                     contractorId: string;
                                     jobId: string;
                                     lineItems: {
                                         description: string;
                                         price?: number | null;
+                                        startDate?: string | null;
+                                        endDate?: string | null;
+                                        contractor?: string | null;
                                     }[];
                                     notes: string | null;
                                     createdAt: string;
@@ -890,6 +913,9 @@ export interface paths {
                         lineItems?: {
                             description: string;
                             price?: number | null;
+                            startDate?: string | null;
+                            endDate?: string | null;
+                            contractor?: string | null;
                         }[];
                         notes?: string | null;
                     };
@@ -906,13 +932,16 @@ export interface paths {
                             success: boolean;
                             message: string;
                             responseObject: {
-                                statementOfWork: {
-                                    statementOfWorkId: string;
+                                scopeOfWork: {
+                                    scopeOfWorkId: string;
                                     contractorId: string;
                                     jobId: string;
                                     lineItems: {
                                         description: string;
                                         price?: number | null;
+                                        startDate?: string | null;
+                                        endDate?: string | null;
+                                        contractor?: string | null;
                                     }[];
                                     notes: string | null;
                                     createdAt: string;
@@ -963,7 +992,8 @@ export interface paths {
                                         price?: number | null;
                                     }[];
                                     notes: string | null;
-                                    customerNotified: boolean;
+                                    /** @enum {string} */
+                                    status: "created" | "paymentRequested" | "paid";
                                     createdAt: string;
                                     updatedAt: string;
                                 }[];
@@ -992,7 +1022,8 @@ export interface paths {
                             price?: number | null;
                         }[];
                         notes?: string;
-                        customerNotified?: boolean;
+                        /** @enum {string} */
+                        status?: "created" | "paymentRequested" | "paid";
                     };
                 };
             };
@@ -1015,7 +1046,8 @@ export interface paths {
                                         price?: number | null;
                                     }[];
                                     notes: string | null;
-                                    customerNotified: boolean;
+                                    /** @enum {string} */
+                                    status: "created" | "paymentRequested" | "paid";
                                     createdAt: string;
                                     updatedAt: string;
                                 };
@@ -1063,7 +1095,8 @@ export interface paths {
                             price?: number | null;
                         }[];
                         notes?: string | null;
-                        customerNotified?: boolean;
+                        /** @enum {string} */
+                        status?: "created" | "paymentRequested" | "paid";
                     };
                 };
             };
@@ -1086,7 +1119,8 @@ export interface paths {
                                         price?: number | null;
                                     }[];
                                     notes: string | null;
-                                    customerNotified: boolean;
+                                    /** @enum {string} */
+                                    status: "created" | "paymentRequested" | "paid";
                                     createdAt: string;
                                     updatedAt: string;
                                 };
@@ -1097,6 +1131,300 @@ export interface paths {
                 };
             };
         };
+        trace?: never;
+    };
+    "/jobs/paymentdraws/{jobId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    jobId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        paymentAmount: number;
+                        /** Format: date-time */
+                        expectedPaymentDate: string;
+                        /** Format: date-time */
+                        actualPaymentDate?: string | null;
+                        /** Format: date-time */
+                        dateRequested?: string;
+                        /** @enum {string} */
+                        status?: "future" | "requested" | "paid";
+                        description?: string;
+                        images?: string[];
+                        shouldNotifyCustomer?: boolean;
+                    };
+                };
+            };
+            responses: {
+                /** @description Success */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            success: boolean;
+                            message: string;
+                            responseObject: {
+                                paymentDraw: {
+                                    paymentDrawId: string;
+                                    jobId: string;
+                                    paymentAmount: number;
+                                    expectedPaymentDate: string;
+                                    actualPaymentDate: string | null;
+                                    dateRequested: string | null;
+                                    /** @enum {string} */
+                                    status: "future" | "requested" | "paid";
+                                    description: string | null;
+                                    images: string[];
+                                    createdAt: string;
+                                    updatedAt: string;
+                                };
+                            };
+                            statusCode: number;
+                        };
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/jobs/paymentdraws/:paymentDrawId/{jobId}/{paymentDrawId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    jobId: string;
+                    paymentDrawId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        paymentAmount?: number;
+                        /** Format: date-time */
+                        expectedPaymentDate?: string;
+                        /** Format: date-time */
+                        actualPaymentDate?: string | null;
+                        /** Format: date-time */
+                        dateRequested?: string;
+                        /** @enum {string} */
+                        status?: "future" | "requested" | "paid";
+                        description?: string | null;
+                        images?: string[];
+                    };
+                };
+            };
+            responses: {
+                /** @description Success */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            success: boolean;
+                            message: string;
+                            responseObject: {
+                                paymentDraw: {
+                                    paymentDrawId: string;
+                                    jobId: string;
+                                    paymentAmount: number;
+                                    expectedPaymentDate: string;
+                                    actualPaymentDate: string | null;
+                                    dateRequested: string | null;
+                                    /** @enum {string} */
+                                    status: "future" | "requested" | "paid";
+                                    description: string | null;
+                                    images: string[];
+                                    createdAt: string;
+                                    updatedAt: string;
+                                };
+                            };
+                            statusCode: number;
+                        };
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
+    "/jobs/clientuploads/{jobId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    jobId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Success */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            success: boolean;
+                            message: string;
+                            responseObject: {
+                                documents: {
+                                    clientUploadId: string;
+                                    jobId: string;
+                                    s3Path: string;
+                                    fileName: string;
+                                    fileType: string;
+                                    notes: string | null;
+                                    createdAt: string;
+                                    updatedAt: string;
+                                    documentUrl: string;
+                                }[];
+                            };
+                            statusCode: number;
+                        };
+                    };
+                };
+            };
+        };
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    jobId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        fileName: string;
+                        fileType: string;
+                        fileData: string;
+                        notes?: string | null;
+                    };
+                };
+            };
+            responses: {
+                /** @description Success */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            success: boolean;
+                            message: string;
+                            responseObject: {
+                                document: {
+                                    clientUploadId: string;
+                                    jobId: string;
+                                    s3Path: string;
+                                    fileName: string;
+                                    fileType: string;
+                                    notes: string | null;
+                                    createdAt: string;
+                                    updatedAt: string;
+                                    documentUrl: string;
+                                };
+                            };
+                            statusCode: number;
+                        };
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/jobs/clientuploads/{jobId}/{clientUploadId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    jobId: string;
+                    clientUploadId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Success */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            success: boolean;
+                            message: string;
+                            responseObject: {
+                                message: string;
+                            };
+                            statusCode: number;
+                        };
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/customers": {

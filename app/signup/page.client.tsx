@@ -59,6 +59,11 @@ export default function SignupPage() {
       const response = await api.POST('/signup', {
         body: data,
       });
+      if (response?.data?.success) {
+        router.push('/signup/verify-email');
+      } else {
+        alert('Signup failed. Please try again.');
+      }
       console.log('Signup response:', response);
     } catch (error) {
       console.error('Signup error:', error);
