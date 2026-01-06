@@ -62,7 +62,7 @@ export function Sidebar() {
           onClick={logout}
         >
           <LogOut className="h-5 w-5" />
-          Logout
+          Sign out
         </Button>
       </div>
     </aside>

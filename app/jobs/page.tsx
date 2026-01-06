@@ -110,12 +110,6 @@ function formatStatus(status: JobStatus): string {
     .join(' ');
 }
 
-function formatBudgetForInput(value: number | null | undefined): string {
-  if (value === null || value === undefined) return '';
-  // Return the number with 2 decimal places, without currency symbol (we add $ prefix in UI)
-  return value.toFixed(2);
-}
-
 function parseBudgetFromInput(value: string): string {
   // Remove all non-digit characters except decimal point
   const cleaned = value.replace(/[^\d.]/g, '');
@@ -132,6 +126,16 @@ export default function JobsPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+
+  useEffect(() => {
+    const handleOpenDialog = () => {
+      setIsCreateDialogOpen(true);
+    };
+    window.addEventListener('openCreateJobDialog', handleOpenDialog);
+    return () => {
+      window.removeEventListener('openCreateJobDialog', handleOpenDialog);
+    };
+  }, []);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingJob, setEditingJob] = useState<Job | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -330,17 +334,6 @@ export default function JobsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Jobs</h1>
-          <p className="text-slate-600">Manage and view all your jobs</p>
-        </div>
-        <Button onClick={() => setIsCreateDialogOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Create Job
-        </Button>
-      </div>
-
       {jobs.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
@@ -355,7 +348,7 @@ export default function JobsPage() {
               className="flex cursor-pointer flex-col transition-shadow hover:shadow-md"
               onClick={() => handleJobClick(job)}
             >
-              <CardHeader>
+              <CardHeader className="p-4">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1">
                     <CardTitle className="text-lg">{job.title}</CardTitle>
@@ -370,7 +363,7 @@ export default function JobsPage() {
                   </span>
                 </div>
               </CardHeader>
-              <CardContent className="flex-1 space-y-3">
+              <CardContent className="flex-1 space-y-3 p-4">
                 {job.description && <p className="line-clamp-2 text-sm text-slate-600">{job.description}</p>}
 
                 <div className="space-y-2 text-sm">
@@ -410,9 +403,9 @@ export default function JobsPage() {
                   )}
 
                   {(job.addressLine1 || job.city || job.state) && (
-                    <div className="border-t border-slate-200 pt-2">
+                    <div className="mt-4 flex flex-row justify-between gap-2 border-t border-slate-200 pt-4">
                       <div className="mb-1 text-xs text-slate-500">Address:</div>
-                      <div className="text-xs">
+                      <div className="align-end text-xs">
                         {job.addressLine1 && <div>{job.addressLine1}</div>}
                         {job.addressLine2 && <div>{job.addressLine2}</div>}
                         {(job.city || job.state || job.postalCode) && (

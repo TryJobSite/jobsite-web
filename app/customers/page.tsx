@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -8,7 +8,14 @@ import * as z from 'zod';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useApi } from '@/(hooks)/useApi';
 import { Button } from '@/(components)/shadcn/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/(components)/shadcn/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/(components)/shadcn/ui/card';
 import {
   Dialog,
   DialogContent,
@@ -19,7 +26,7 @@ import {
 } from '@/(components)/shadcn/ui/dialog';
 import { Input } from '@/(components)/shadcn/ui/input';
 import { Label } from '@/(components)/shadcn/ui/label';
-import { Plus } from 'lucide-react';
+import { ChevronRight, Plus } from 'lucide-react';
 
 const contactMethods = ['email', 'phone', 'sms', 'whatsapp'] as const;
 
@@ -69,6 +76,16 @@ export default function CustomersPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+
+  useEffect(() => {
+    const handleOpenDialog = () => {
+      setIsCreateDialogOpen(true);
+    };
+    window.addEventListener('openCreateCustomerDialog', handleOpenDialog);
+    return () => {
+      window.removeEventListener('openCreateCustomerDialog', handleOpenDialog);
+    };
+  }, []);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -192,17 +209,6 @@ export default function CustomersPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Customers</h1>
-          <p className="text-slate-600">Manage and view all your customers</p>
-        </div>
-        <Button onClick={() => setIsCreateDialogOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Create Customer
-        </Button>
-      </div>
-
       {customers.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
@@ -217,46 +223,48 @@ export default function CustomersPage() {
               className="flex cursor-pointer flex-col transition-shadow hover:shadow-md"
               onClick={() => handleCustomerClick(customer)}
             >
-              <CardHeader>
-                <CardTitle className="text-lg">
+              <CardHeader className="p-4">
+                <CardTitle className="mb-0 text-lg">
                   {customer.firstName} {customer.lastName}
                 </CardTitle>
                 <CardDescription>{customer.email}</CardDescription>
               </CardHeader>
-              <CardContent className="flex-1 space-y-3">
-                <div className="space-y-2 text-sm">
-                  {customer.phoneNumber && (
-                    <div className="flex justify-between">
-                      <span className="text-slate-500">Phone:</span>
-                      <span>{customer.phoneNumber}</span>
-                    </div>
-                  )}
+              <CardContent className="flex flex-1 flex-col space-y-3 p-4">
+                {customer.phoneNumber && (
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">Phone:</span>
+                    <span>{customer.phoneNumber}</span>
+                  </div>
+                )}
 
-                  {customer.preferredContactMethod && (
-                    <div className="flex justify-between">
-                      <span className="text-slate-500">Preferred Contact:</span>
-                      <span>{formatContactMethod(customer.preferredContactMethod)}</span>
-                    </div>
-                  )}
+                {customer.preferredContactMethod && (
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">Preferred Contact:</span>
+                    <span>{formatContactMethod(customer.preferredContactMethod)}</span>
+                  </div>
+                )}
 
-                  <div className="border-t border-slate-200 pt-2">
-                    <div className="mb-1 text-xs text-slate-500">Address:</div>
-                    <div className="text-xs">
-                      <div>{customer.addressLine1}</div>
-                      {customer.addressLine2 && <div>{customer.addressLine2}</div>}
-                      <div>
-                        {customer.city}, {customer.state} {customer.postalCode}
-                      </div>
+                <div className="flex flex-row justify-between gap-2 border-t border-slate-200 pt-2">
+                  <div className="mb-1 text-xs text-slate-500">Address:</div>
+                  <div className="text-xs">
+                    <div>{customer.addressLine1}</div>
+                    {customer.addressLine2 && <div>{customer.addressLine2}</div>}
+                    <div>
+                      {customer.city}, {customer.state} {customer.postalCode}
                     </div>
                   </div>
-
-                  {customer.notes && (
-                    <div className="border-t border-slate-200 pt-2">
-                      <div className="mb-1 text-xs text-slate-500">Notes:</div>
-                      <p className="line-clamp-2 text-xs">{customer.notes}</p>
-                    </div>
-                  )}
                 </div>
+
+                {customer.notes && (
+                  <div className="border-t border-slate-200 pt-2">
+                    <div className="mb-1 text-xs text-slate-500">Notes:</div>
+                    <p className="line-clamp-2 text-xs">{customer.notes}</p>
+                  </div>
+                )}
+                <Button variant="outline" size="sm" className="mt-auto ml-auto w-50">
+                  View Customer Details
+                  <ChevronRight className="ml-auto" />
+                </Button>
               </CardContent>
             </Card>
           ))}

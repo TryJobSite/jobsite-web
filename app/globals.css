@@ -9,7 +9,7 @@
   --color-card-foreground: oklch(9% 0.03 285.885);
   --color-popover: oklch(100% 0 0);
   --color-popover-foreground: oklch(9% 0.03 285.885);
-  --color-primary: oklch(21.5% 0.0216 285.885);
+  --color-primary: #1f76d6;
   --color-primary-foreground: oklch(98% 0 0);
   --color-secondary: oklch(96.1% 0 0);
   --color-secondary-foreground: oklch(21.5% 0.0216 285.885);

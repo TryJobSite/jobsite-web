@@ -1,8 +1,19 @@
 import { Sidebar } from './sidebar';
 import { redirect } from 'next/navigation';
 import { useApiServerSide } from '@/(hooks)/useApiServerSide';
+import { AuthenticatedContent } from './authenticated-content';
 
-export async function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
+export async function AuthenticatedLayout({
+  children,
+  title,
+  subtitle,
+  action,
+}: {
+  children: React.ReactNode;
+  title?: string;
+  subtitle?: string;
+  action?: React.ReactNode;
+}) {
   const { api } = useApiServerSide();
   let me: any = null;
   let redirectToLogin = false;
@@ -16,7 +27,9 @@ export async function AuthenticatedLayout({ children }: { children: React.ReactN
   return (
     <div className="flex h-screen overflow-hidden">
       <Sidebar />
-      <main className="flex-1 overflow-y-auto bg-slate-50 p-6">{children}</main>
+      <AuthenticatedContent title={title} subtitle={subtitle} action={action}>
+        {children}
+      </AuthenticatedContent>
     </div>
   );
 }
