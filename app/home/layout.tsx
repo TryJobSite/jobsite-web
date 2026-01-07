@@ -1,9 +1,5 @@
 import { AuthenticatedLayout } from '@/(components)/layout/authenticated-layout';
 
 export default function HomeLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <AuthenticatedLayout title="Home" subtitle="Overview of your jobs and activity">
-      {children}
-    </AuthenticatedLayout>
-  );
+  return <AuthenticatedLayout>{children}</AuthenticatedLayout>;
 }
