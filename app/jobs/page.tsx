@@ -19,7 +19,14 @@ import {
 } from '@/(components)/shadcn/ui/dialog';
 import { Input } from '@/(components)/shadcn/ui/input';
 import { Label } from '@/(components)/shadcn/ui/label';
-import { Plus } from 'lucide-react';
+import { ChevronRight, Link, Plus } from 'lucide-react';
+import { PageHeader } from '@/(components)/layout/page-header';
+import {
+  Breadcrumb,
+  BreadcrumbLink,
+  BreadcrumbItem,
+  BreadcrumbList,
+} from '@/(components)/shadcn/ui/breadcrumb';
 
 type JobStatus = 'planned' | 'in-progress' | 'completed' | 'cancelled' | 'on-hold';
 
@@ -333,483 +340,510 @@ export default function JobsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      {jobs.length === 0 ? (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <p className="text-slate-500">No jobs found. Create your first job to get started.</p>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {jobs.map((job) => (
-            <Card
-              key={job.jobId}
-              className="flex cursor-pointer flex-col transition-shadow hover:shadow-md"
-              onClick={() => handleJobClick(job)}
-            >
-              <CardHeader className="p-4">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1">
-                    <CardTitle className="text-lg">{job.title}</CardTitle>
-                    {job.jobNumber && (
-                      <CardDescription className="mt-1">Job #{job.jobNumber}</CardDescription>
+    <>
+      <PageHeader
+        title="Jobs"
+        subtitle="Manage and view all your jobs"
+        action={
+          <Button onClick={() => window.dispatchEvent(new CustomEvent('openCreateJobDialog'))}>
+            <Plus className="mr-2 h-4 w-4" />
+            Create Job
+          </Button>
+        }
+      />
+      <div className="space-y-6 p-6">
+        {jobs.length === 0 ? (
+          <Card>
+            <CardContent className="py-12 text-center">
+              <p className="text-slate-500">No jobs found. Create your first job to get started.</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {jobs.map((job) => (
+              <Card
+                key={job.jobId}
+                className="flex cursor-pointer flex-col transition-shadow hover:shadow-md"
+                onClick={() => handleJobClick(job)}
+              >
+                <CardHeader className="p-4">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1">
+                      <CardTitle className="text-lg">{job.title}</CardTitle>
+                      {job.jobNumber && (
+                        <CardDescription className="mt-1">Job #{job.jobNumber}</CardDescription>
+                      )}
+                    </div>
+                    <span
+                      className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${getStatusColor( job.status
+                        )}`}
+                    >
+                      {formatStatus(job.status)}
+                    </span>
+                  </div>
+                </CardHeader>
+                <CardContent className="flex flex-1 flex-col space-y-3 p-4">
+                  {job.description && (
+                    <p className="line-clamp-2 text-sm text-slate-600">{job.description}</p>
+                  )}
+
+                  <div className="space-y-2 text-sm">
+                    {job.budget !== null && (
+                      <div className="flex justify-between">
+                        <span className="text-slate-500">Budget:</span>
+                        <span className="font-medium">{formatCurrency(job.budget)}</span>
+                      </div>
+                    )}
+
+                    {job.estimatedStartDate && (
+                      <div className="flex justify-between">
+                        <span className="text-slate-500">Est. Start:</span>
+                        <span>{formatDate(job.estimatedStartDate)}</span>
+                      </div>
+                    )}
+
+                    {job.estimatedEndDate && (
+                      <div className="flex justify-between">
+                        <span className="text-slate-500">Est. End:</span>
+                        <span>{formatDate(job.estimatedEndDate)}</span>
+                      </div>
+                    )}
+
+                    {job.actualStartDate && (
+                      <div className="flex justify-between">
+                        <span className="text-slate-500">Actual Start:</span>
+                        <span>{formatDate(job.actualStartDate)}</span>
+                      </div>
+                    )}
+
+                    {job.actualEndDate && (
+                      <div className="flex justify-between">
+                        <span className="text-slate-500">Actual End:</span>
+                        <span>{formatDate(job.actualEndDate)}</span>
+                      </div>
+                    )}
+
+                    {(job.addressLine1 || job.city || job.state) && (
+                      <div className="mt-4 flex flex-row justify-between gap-2 border-t border-slate-200 pt-4">
+                        <div className="mb-1 text-xs text-slate-500">Address:</div>
+                        <div className="align-end text-xs">
+                          {job.addressLine1 && <div>{job.addressLine1}</div>}
+                          {job.addressLine2 && <div>{job.addressLine2}</div>}
+                          {(job.city || job.state || job.postalCode) && (
+                            <div>{[job.city, job.state, job.postalCode].filter(Boolean).join(', ')}</div>
+                          )}
+                          {job.country && <div>{job.country}</div>}
+                        </div>
+                      </div>
                     )}
                   </div>
-                  <span
-                    className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${getStatusColor(job.status)}`}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="mt-auto ml-auto w-50 border-1 border-[#388AE4]"
                   >
-                    {formatStatus(job.status)}
-                  </span>
-                </div>
-              </CardHeader>
-              <CardContent className="flex-1 space-y-3 p-4">
-                {job.description && <p className="line-clamp-2 text-sm text-slate-600">{job.description}</p>}
+                    View Job Details
+                    <ChevronRight className="ml-auto" />
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
 
-                <div className="space-y-2 text-sm">
-                  {job.budget !== null && (
-                    <div className="flex justify-between">
-                      <span className="text-slate-500">Budget:</span>
-                      <span className="font-medium">{formatCurrency(job.budget)}</span>
-                    </div>
-                  )}
-
-                  {job.estimatedStartDate && (
-                    <div className="flex justify-between">
-                      <span className="text-slate-500">Est. Start:</span>
-                      <span>{formatDate(job.estimatedStartDate)}</span>
-                    </div>
-                  )}
-
-                  {job.estimatedEndDate && (
-                    <div className="flex justify-between">
-                      <span className="text-slate-500">Est. End:</span>
-                      <span>{formatDate(job.estimatedEndDate)}</span>
-                    </div>
-                  )}
-
-                  {job.actualStartDate && (
-                    <div className="flex justify-between">
-                      <span className="text-slate-500">Actual Start:</span>
-                      <span>{formatDate(job.actualStartDate)}</span>
-                    </div>
-                  )}
-
-                  {job.actualEndDate && (
-                    <div className="flex justify-between">
-                      <span className="text-slate-500">Actual End:</span>
-                      <span>{formatDate(job.actualEndDate)}</span>
-                    </div>
-                  )}
-
-                  {(job.addressLine1 || job.city || job.state) && (
-                    <div className="mt-4 flex flex-row justify-between gap-2 border-t border-slate-200 pt-4">
-                      <div className="mb-1 text-xs text-slate-500">Address:</div>
-                      <div className="align-end text-xs">
-                        {job.addressLine1 && <div>{job.addressLine1}</div>}
-                        {job.addressLine2 && <div>{job.addressLine2}</div>}
-                        {(job.city || job.state || job.postalCode) && (
-                          <div>{[job.city, job.state, job.postalCode].filter(Boolean).join(', ')}</div>
-                        )}
-                        {job.country && <div>{job.country}</div>}
-                      </div>
-                    </div>
+        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+          <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Create New Job</DialogTitle>
+              <DialogDescription>Fill in the details to create a new job.</DialogDescription>
+            </DialogHeader>
+            <form onSubmit={createForm.handleSubmit(onSubmitCreateJob)} className="space-y-4">
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="customerId">
+                    Customer <span className="text-red-500">*</span>
+                  </Label>
+                  <select
+                    id="customerId"
+                    {...createForm.register('customerId')}
+                    className={`flex h-10 w-full rounded-md border border-input bg-background px-3 py-2
+                      text-sm ring-offset-background focus-visible:ring-2 focus-visible:ring-ring
+                      focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed
+                      disabled:opacity-50 ${createForm.formState.errors.customerId ? 'border-red-500' : ''}`}
+                  >
+                    <option value="">Select a customer</option>
+                    {customers.map((customer) => (
+                      <option key={customer.customerId} value={customer.customerId}>
+                        {customer.firstName} {customer.lastName} ({customer.email})
+                      </option>
+                    ))}
+                  </select>
+                  {createForm.formState.errors.customerId && (
+                    <p className="text-sm text-red-500">{createForm.formState.errors.customerId.message}</p>
                   )}
                 </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
 
-      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Create New Job</DialogTitle>
-            <DialogDescription>Fill in the details to create a new job.</DialogDescription>
-          </DialogHeader>
-          <form onSubmit={createForm.handleSubmit(onSubmitCreateJob)} className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="customerId">
-                  Customer <span className="text-red-500">*</span>
-                </Label>
-                <select
-                  id="customerId"
-                  {...createForm.register('customerId')}
-                  className={`flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm
-                    ring-offset-background focus-visible:ring-2 focus-visible:ring-ring
-                    focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed
-                    disabled:opacity-50 ${createForm.formState.errors.customerId ? 'border-red-500' : ''}`}
-                >
-                  <option value="">Select a customer</option>
-                  {customers.map((customer) => (
-                    <option key={customer.customerId} value={customer.customerId}>
-                      {customer.firstName} {customer.lastName} ({customer.email})
-                    </option>
-                  ))}
-                </select>
-                {createForm.formState.errors.customerId && (
-                  <p className="text-sm text-red-500">{createForm.formState.errors.customerId.message}</p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="jobNumber">Job Number</Label>
-                <Input id="jobNumber" placeholder="Enter job number" {...createForm.register('jobNumber')} />
-              </div>
-
-              <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="title">
-                  Title <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="title"
-                  placeholder="Enter job title"
-                  {...createForm.register('title')}
-                  className={createForm.formState.errors.title ? 'border-red-500' : ''}
-                />
-                {createForm.formState.errors.title && (
-                  <p className="text-sm text-red-500">{createForm.formState.errors.title.message}</p>
-                )}
-              </div>
-
-              <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="description">Description</Label>
-                <textarea
-                  id="description"
-                  placeholder="Enter job description"
-                  {...createForm.register('description')}
-                  className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2
-                    text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:ring-2
-                    focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none
-                    disabled:cursor-not-allowed disabled:opacity-50"
-                  rows={3}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="status">
-                  Status <span className="text-red-500">*</span>
-                </Label>
-                <select
-                  id="status"
-                  {...createForm.register('status')}
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm
-                    ring-offset-background focus-visible:ring-2 focus-visible:ring-ring
-                    focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed
-                    disabled:opacity-50"
-                >
-                  {jobStatuses.map((status) => (
-                    <option key={status} value={status}>
-                      {formatStatus(status)}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="budget">Budget</Label>
-                <div className="relative">
-                  <span className="absolute top-1/2 left-3 -translate-y-1/2 text-slate-500">$</span>
+                <div className="space-y-2">
+                  <Label htmlFor="jobNumber">Job Number</Label>
                   <Input
-                    id="budget"
-                    type="text"
-                    placeholder="0.00"
-                    className="pl-7"
-                    {...createForm.register('budget', {
-                      onChange: (e) => {
-                        const parsed = parseBudgetFromInput(e.target.value);
-                        e.target.value = parsed;
-                      },
-                    })}
+                    id="jobNumber"
+                    placeholder="Enter job number"
+                    {...createForm.register('jobNumber')}
                   />
                 </div>
-              </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="estimatedStartDate">Estimated Start Date</Label>
-                <Input id="estimatedStartDate" type="date" {...createForm.register('estimatedStartDate')} />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="estimatedEndDate">Estimated End Date</Label>
-                <Input id="estimatedEndDate" type="date" {...createForm.register('estimatedEndDate')} />
-              </div>
-
-              <div className="space-y-2 md:col-span-2">
-                <Label className="text-base font-semibold">Address</Label>
-              </div>
-
-              <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="addressLine1">Address Line 1</Label>
-                <Input
-                  id="addressLine1"
-                  placeholder="Enter address"
-                  {...createForm.register('addressLine1')}
-                />
-              </div>
-
-              <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="addressLine2">Address Line 2</Label>
-                <Input
-                  id="addressLine2"
-                  placeholder="Enter address line 2"
-                  {...createForm.register('addressLine2')}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="city">City</Label>
-                <Input id="city" placeholder="Enter city" {...createForm.register('city')} />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="state">State</Label>
-                <Input id="state" placeholder="Enter state" {...createForm.register('state')} />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="postalCode">Postal Code</Label>
-                <Input
-                  id="postalCode"
-                  placeholder="Enter postal code"
-                  {...createForm.register('postalCode')}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="country">Country</Label>
-                <Input id="country" placeholder="Enter country" {...createForm.register('country')} />
-              </div>
-            </div>
-
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  setIsCreateDialogOpen(false);
-                  createForm.reset();
-                }}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? 'Creating...' : 'Create Job'}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Edit Job</DialogTitle>
-            <DialogDescription>Update the job details.</DialogDescription>
-          </DialogHeader>
-          <form onSubmit={editForm.handleSubmit(onSubmitUpdateJob)} className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="edit-customerId">
-                  Customer <span className="text-red-500">*</span>
-                </Label>
-                <select
-                  id="edit-customerId"
-                  {...editForm.register('customerId')}
-                  className={`flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm
-                    ring-offset-background focus-visible:ring-2 focus-visible:ring-ring
-                    focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed
-                    disabled:opacity-50 ${editForm.formState.errors.customerId ? 'border-red-500' : ''}`}
-                >
-                  <option value="">Select a customer</option>
-                  {customers.map((customer) => (
-                    <option key={customer.customerId} value={customer.customerId}>
-                      {customer.firstName} {customer.lastName} ({customer.email})
-                    </option>
-                  ))}
-                </select>
-                {editForm.formState.errors.customerId && (
-                  <p className="text-sm text-red-500">{editForm.formState.errors.customerId.message}</p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="edit-jobNumber">Job Number</Label>
-                <Input
-                  id="edit-jobNumber"
-                  placeholder="Enter job number"
-                  {...editForm.register('jobNumber')}
-                />
-              </div>
-
-              <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="edit-title">
-                  Title <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="edit-title"
-                  placeholder="Enter job title"
-                  {...editForm.register('title')}
-                  className={editForm.formState.errors.title ? 'border-red-500' : ''}
-                />
-                {editForm.formState.errors.title && (
-                  <p className="text-sm text-red-500">{editForm.formState.errors.title.message}</p>
-                )}
-              </div>
-
-              <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="edit-description">Description</Label>
-                <textarea
-                  id="edit-description"
-                  placeholder="Enter job description"
-                  {...editForm.register('description')}
-                  className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2
-                    text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:ring-2
-                    focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none
-                    disabled:cursor-not-allowed disabled:opacity-50"
-                  rows={3}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="edit-status">
-                  Status <span className="text-red-500">*</span>
-                </Label>
-                <select
-                  id="edit-status"
-                  {...editForm.register('status')}
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm
-                    ring-offset-background focus-visible:ring-2 focus-visible:ring-ring
-                    focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed
-                    disabled:opacity-50"
-                >
-                  {jobStatuses.map((status) => (
-                    <option key={status} value={status}>
-                      {formatStatus(status)}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="edit-budget">Budget</Label>
-                <div className="relative">
-                  <span className="absolute top-1/2 left-3 -translate-y-1/2 text-slate-500">$</span>
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="title">
+                    Title <span className="text-red-500">*</span>
+                  </Label>
                   <Input
-                    id="edit-budget"
-                    type="text"
-                    placeholder="0.00"
-                    className="pl-7"
-                    {...editForm.register('budget', {
-                      onChange: (e) => {
-                        const parsed = parseBudgetFromInput(e.target.value);
-                        e.target.value = parsed;
-                      },
-                    })}
+                    id="title"
+                    placeholder="Enter job title"
+                    {...createForm.register('title')}
+                    className={createForm.formState.errors.title ? 'border-red-500' : ''}
                   />
+                  {createForm.formState.errors.title && (
+                    <p className="text-sm text-red-500">{createForm.formState.errors.title.message}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="description">Description</Label>
+                  <textarea
+                    id="description"
+                    placeholder="Enter job description"
+                    {...createForm.register('description')}
+                    className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2
+                      text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:ring-2
+                      focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none
+                      disabled:cursor-not-allowed disabled:opacity-50"
+                    rows={3}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="status">
+                    Status <span className="text-red-500">*</span>
+                  </Label>
+                  <select
+                    id="status"
+                    {...createForm.register('status')}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm
+                      ring-offset-background focus-visible:ring-2 focus-visible:ring-ring
+                      focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed
+                      disabled:opacity-50"
+                  >
+                    {jobStatuses.map((status) => (
+                      <option key={status} value={status}>
+                        {formatStatus(status)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="budget">Budget</Label>
+                  <div className="relative">
+                    <span className="absolute top-1/2 left-3 -translate-y-1/2 text-slate-500">$</span>
+                    <Input
+                      id="budget"
+                      type="text"
+                      placeholder="0.00"
+                      className="pl-7"
+                      {...createForm.register('budget', {
+                        onChange: (e) => {
+                          const parsed = parseBudgetFromInput(e.target.value);
+                          e.target.value = parsed;
+                        },
+                      })}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="estimatedStartDate">Estimated Start Date</Label>
+                  <Input id="estimatedStartDate" type="date" {...createForm.register('estimatedStartDate')} />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="estimatedEndDate">Estimated End Date</Label>
+                  <Input id="estimatedEndDate" type="date" {...createForm.register('estimatedEndDate')} />
+                </div>
+
+                <div className="space-y-2 md:col-span-2">
+                  <Label className="text-base font-semibold">Address</Label>
+                </div>
+
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="addressLine1">Address Line 1</Label>
+                  <Input
+                    id="addressLine1"
+                    placeholder="Enter address"
+                    {...createForm.register('addressLine1')}
+                  />
+                </div>
+
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="addressLine2">Address Line 2</Label>
+                  <Input
+                    id="addressLine2"
+                    placeholder="Enter address line 2"
+                    {...createForm.register('addressLine2')}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="city">City</Label>
+                  <Input id="city" placeholder="Enter city" {...createForm.register('city')} />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="state">State</Label>
+                  <Input id="state" placeholder="Enter state" {...createForm.register('state')} />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="postalCode">Postal Code</Label>
+                  <Input
+                    id="postalCode"
+                    placeholder="Enter postal code"
+                    {...createForm.register('postalCode')}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="country">Country</Label>
+                  <Input id="country" placeholder="Enter country" {...createForm.register('country')} />
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="edit-estimatedStartDate">Estimated Start Date</Label>
-                <Input
-                  id="edit-estimatedStartDate"
-                  type="date"
-                  {...editForm.register('estimatedStartDate')}
-                />
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setIsCreateDialogOpen(false);
+                    createForm.reset();
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? 'Creating...' : 'Create Job'}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Edit Job</DialogTitle>
+              <DialogDescription>Update the job details.</DialogDescription>
+            </DialogHeader>
+            <form onSubmit={editForm.handleSubmit(onSubmitUpdateJob)} className="space-y-4">
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-customerId">
+                    Customer <span className="text-red-500">*</span>
+                  </Label>
+                  <select
+                    id="edit-customerId"
+                    {...editForm.register('customerId')}
+                    className={`flex h-10 w-full rounded-md border border-input bg-background px-3 py-2
+                      text-sm ring-offset-background focus-visible:ring-2 focus-visible:ring-ring
+                      focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed
+                      disabled:opacity-50 ${editForm.formState.errors.customerId ? 'border-red-500' : ''}`}
+                  >
+                    <option value="">Select a customer</option>
+                    {customers.map((customer) => (
+                      <option key={customer.customerId} value={customer.customerId}>
+                        {customer.firstName} {customer.lastName} ({customer.email})
+                      </option>
+                    ))}
+                  </select>
+                  {editForm.formState.errors.customerId && (
+                    <p className="text-sm text-red-500">{editForm.formState.errors.customerId.message}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="edit-jobNumber">Job Number</Label>
+                  <Input
+                    id="edit-jobNumber"
+                    placeholder="Enter job number"
+                    {...editForm.register('jobNumber')}
+                  />
+                </div>
+
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="edit-title">
+                    Title <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="edit-title"
+                    placeholder="Enter job title"
+                    {...editForm.register('title')}
+                    className={editForm.formState.errors.title ? 'border-red-500' : ''}
+                  />
+                  {editForm.formState.errors.title && (
+                    <p className="text-sm text-red-500">{editForm.formState.errors.title.message}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="edit-description">Description</Label>
+                  <textarea
+                    id="edit-description"
+                    placeholder="Enter job description"
+                    {...editForm.register('description')}
+                    className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2
+                      text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:ring-2
+                      focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none
+                      disabled:cursor-not-allowed disabled:opacity-50"
+                    rows={3}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="edit-status">
+                    Status <span className="text-red-500">*</span>
+                  </Label>
+                  <select
+                    id="edit-status"
+                    {...editForm.register('status')}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm
+                      ring-offset-background focus-visible:ring-2 focus-visible:ring-ring
+                      focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed
+                      disabled:opacity-50"
+                  >
+                    {jobStatuses.map((status) => (
+                      <option key={status} value={status}>
+                        {formatStatus(status)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="edit-budget">Budget</Label>
+                  <div className="relative">
+                    <span className="absolute top-1/2 left-3 -translate-y-1/2 text-slate-500">$</span>
+                    <Input
+                      id="edit-budget"
+                      type="text"
+                      placeholder="0.00"
+                      className="pl-7"
+                      {...editForm.register('budget', {
+                        onChange: (e) => {
+                          const parsed = parseBudgetFromInput(e.target.value);
+                          e.target.value = parsed;
+                        },
+                      })}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="edit-estimatedStartDate">Estimated Start Date</Label>
+                  <Input
+                    id="edit-estimatedStartDate"
+                    type="date"
+                    {...editForm.register('estimatedStartDate')}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="edit-estimatedEndDate">Estimated End Date</Label>
+                  <Input id="edit-estimatedEndDate" type="date" {...editForm.register('estimatedEndDate')} />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="edit-actualStartDate">Actual Start Date</Label>
+                  <Input
+                    id="edit-actualStartDate"
+                    type="datetime-local"
+                    {...editForm.register('actualStartDate')}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="edit-actualEndDate">Actual End Date</Label>
+                  <Input
+                    id="edit-actualEndDate"
+                    type="datetime-local"
+                    {...editForm.register('actualEndDate')}
+                  />
+                </div>
+
+                <div className="space-y-2 md:col-span-2">
+                  <Label className="text-base font-semibold">Address</Label>
+                </div>
+
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="edit-addressLine1">Address Line 1</Label>
+                  <Input
+                    id="edit-addressLine1"
+                    placeholder="Enter address"
+                    {...editForm.register('addressLine1')}
+                  />
+                </div>
+
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="edit-addressLine2">Address Line 2</Label>
+                  <Input
+                    id="edit-addressLine2"
+                    placeholder="Enter address line 2"
+                    {...editForm.register('addressLine2')}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="edit-city">City</Label>
+                  <Input id="edit-city" placeholder="Enter city" {...editForm.register('city')} />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="edit-state">State</Label>
+                  <Input id="edit-state" placeholder="Enter state" {...editForm.register('state')} />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="edit-postalCode">Postal Code</Label>
+                  <Input
+                    id="edit-postalCode"
+                    placeholder="Enter postal code"
+                    {...editForm.register('postalCode')}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="edit-country">Country</Label>
+                  <Input id="edit-country" placeholder="Enter country" {...editForm.register('country')} />
+                </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="edit-estimatedEndDate">Estimated End Date</Label>
-                <Input id="edit-estimatedEndDate" type="date" {...editForm.register('estimatedEndDate')} />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="edit-actualStartDate">Actual Start Date</Label>
-                <Input
-                  id="edit-actualStartDate"
-                  type="datetime-local"
-                  {...editForm.register('actualStartDate')}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="edit-actualEndDate">Actual End Date</Label>
-                <Input
-                  id="edit-actualEndDate"
-                  type="datetime-local"
-                  {...editForm.register('actualEndDate')}
-                />
-              </div>
-
-              <div className="space-y-2 md:col-span-2">
-                <Label className="text-base font-semibold">Address</Label>
-              </div>
-
-              <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="edit-addressLine1">Address Line 1</Label>
-                <Input
-                  id="edit-addressLine1"
-                  placeholder="Enter address"
-                  {...editForm.register('addressLine1')}
-                />
-              </div>
-
-              <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="edit-addressLine2">Address Line 2</Label>
-                <Input
-                  id="edit-addressLine2"
-                  placeholder="Enter address line 2"
-                  {...editForm.register('addressLine2')}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="edit-city">City</Label>
-                <Input id="edit-city" placeholder="Enter city" {...editForm.register('city')} />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="edit-state">State</Label>
-                <Input id="edit-state" placeholder="Enter state" {...editForm.register('state')} />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="edit-postalCode">Postal Code</Label>
-                <Input
-                  id="edit-postalCode"
-                  placeholder="Enter postal code"
-                  {...editForm.register('postalCode')}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="edit-country">Country</Label>
-                <Input id="edit-country" placeholder="Enter country" {...editForm.register('country')} />
-              </div>
-            </div>
-
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  setIsEditDialogOpen(false);
-                  setEditingJob(null);
-                  editForm.reset();
-                }}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={isUpdating}>
-                {isUpdating ? 'Updating...' : 'Update Job'}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-    </div>
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setIsEditDialogOpen(false);
+                    setEditingJob(null);
+                    editForm.reset();
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={isUpdating}>
+                  {isUpdating ? 'Updating...' : 'Update Job'}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </div>
+    </>
   );
 }

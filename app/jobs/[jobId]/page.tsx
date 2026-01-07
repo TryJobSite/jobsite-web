@@ -9,6 +9,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/(components)/shadcn/ui/button';
 import { ArrowLeft, Plus } from 'lucide-react';
+import Link from 'next/link';
 import { DescriptionCard } from './(components)/description-card';
 import { JobDetailsCard } from './(components)/job-details-card';
 import { ScopeOfWorkCard } from './(components)/scope-of-work-card';
@@ -30,6 +31,15 @@ import {
   formatStatus,
 } from './(components)/utils';
 import type { Job, ScopeOfWork, ChangeOrder, PaymentDraw } from './(components)/types';
+import {
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbSeparator,
+  BreadcrumbPage,
+} from '@/(components)/shadcn/ui/breadcrumb';
+import { PageHeader } from '@/(components)/layout/page-header';
+import { Breadcrumb } from '@/(components)/shadcn/ui/breadcrumb';
 
 const addressSchema = z.object({
   addressLine1: z.string().optional(),
@@ -875,14 +885,44 @@ export default function JobDetailPage() {
       setIsSubmitting(false);
     }
   };
+  // <Breadcrumb>
+  //           <BreadcrumbList>
+  //             <BreadcrumbItem>
+  //               <BreadcrumbLink asChild>
+  //                 <Link href="/customers" className="text-2xl">
+  //                   Customers
+  //                 </Link>
+  //               </BreadcrumbLink>
+  //             </BreadcrumbItem>
+  //             <BreadcrumbSeparator />
+  //             <BreadcrumbItem>
+  //               <BreadcrumbPage className="text-2xl">{customerName}</BreadcrumbPage>
+  //             </BreadcrumbItem>
+  //           </BreadcrumbList>
+  //         </Breadcrumb>
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Button variant="outline" onClick={() => router.push('/jobs')}>
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back
-        </Button>
+    <>
+      <PageHeader
+        breadcrumb={
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbLink asChild>
+                  <Link href="/jobs" className="text-2xl">
+                    Jobs
+                  </Link>
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbPage className="text-2xl">{job.title}</BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
+        }
+      />
+      <div className="space-y-6 p-6">
         <div className="flex-1">
           <div className="flex items-center gap-3">
             <h1 className="text-3xl font-bold tracking-tight">{job.title}</h1>
@@ -892,128 +932,128 @@ export default function JobDetailPage() {
           </div>
           {job.jobNumber && <p className="text-slate-600">Job #{job.jobNumber}</p>}
         </div>
-      </div>
 
-      <JobHeaderCard
-        job={job}
-        onCreateChangeOrder={handleCreateChangeOrder}
-        onUploadDocument={handleUploadDocument}
-        onUpdateJobDetails={handleUpdateJobDetails}
-      />
-
-      <div className="flex flex-wrap gap-6">
-        <DescriptionCard
+        <JobHeaderCard
           job={job}
-          editingSection={editingSection}
-          isSubmitting={isSubmitting}
-          descriptionForm={descriptionForm}
-          onEdit={handleEditDescription}
-          onCancel={handleCancel}
-          onSubmit={onSubmitDescription}
+          onCreateChangeOrder={handleCreateChangeOrder}
+          onUploadDocument={handleUploadDocument}
+          onUpdateJobDetails={handleUpdateJobDetails}
         />
 
-        <JobDetailsCard
-          job={job}
-          editingSection={editingSection}
+        <div className="flex flex-wrap gap-6">
+          <DescriptionCard
+            job={job}
+            editingSection={editingSection}
+            isSubmitting={isSubmitting}
+            descriptionForm={descriptionForm}
+            onEdit={handleEditDescription}
+            onCancel={handleCancel}
+            onSubmit={onSubmitDescription}
+          />
+
+          <JobDetailsCard
+            job={job}
+            editingSection={editingSection}
+            isSubmitting={isSubmitting}
+            jobDetailsForm={jobDetailsForm}
+            onEdit={handleEditDetails}
+            onCancel={handleCancel}
+            onSubmit={onSubmitDetails}
+          />
+        </div>
+
+        <TimelineCard
+          sowData={sowData}
+          changeOrders={changeOrdersData}
+          paymentDraws={paymentDraws}
+          isLoading={isLoadingSOW || isLoadingChangeOrders}
+        />
+
+        <ScopeOfWorkCard
+          isLoading={isLoadingSOW}
+          sowData={sowData}
+          isCreating={isCreatingSOW}
+          isEditing={isEditingSOW}
           isSubmitting={isSubmitting}
-          jobDetailsForm={jobDetailsForm}
-          onEdit={handleEditDetails}
-          onCancel={handleCancel}
-          onSubmit={onSubmitDetails}
+          sowForm={sowForm}
+          onCreate={handleCreateSOW}
+          onEdit={handleEditSOW}
+          onCancel={handleCancelSOW}
+          onSubmit={onSubmitSOW}
+        />
+
+        <ChangeOrdersCard
+          isLoading={isLoadingChangeOrders}
+          changeOrders={changeOrdersData}
+          onEdit={handleEditChangeOrder}
+        />
+
+        <PaymentDrawsCard
+          paymentDraws={paymentDraws}
+          onView={handleViewPaymentDraw}
+          onEdit={handleEditPaymentDraw}
+          onCreate={handleCreatePaymentDraw}
+        />
+
+        <DocumentsCard
+          isLoading={isLoadingDocuments}
+          documents={documentsData}
+          onUpload={handleUploadDocument}
+          onDelete={handleDeleteDocument}
+          onDownload={handleDownloadDocument}
+          onView={handleViewDocument}
+        />
+
+        <ChangeOrderModal
+          open={isCreateChangeOrderOpen}
+          onOpenChange={handleCloseChangeOrderModal}
+          isEditing={!!editingChangeOrderId}
+          isSubmitting={isSubmitting}
+          changeOrderForm={changeOrderForm}
+          onSubmit={onSubmitChangeOrder}
+        />
+
+        <PaymentDrawModal
+          open={isCreatePaymentDrawOpen}
+          onOpenChange={handleClosePaymentDrawModal}
+          isEditing={!!editingPaymentDrawId}
+          isViewing={!!viewingPaymentDraw}
+          viewingPaymentDraw={viewingPaymentDraw}
+          isSubmitting={isSubmitting}
+          paymentDrawForm={paymentDrawForm}
+          onSubmit={onSubmitPaymentDraw}
+          onEdit={() => {
+            if (viewingPaymentDraw) {
+              handleEditPaymentDraw(viewingPaymentDraw);
+            }
+          }}
+        />
+
+        <DocumentUploadModal
+          open={isDocumentUploadOpen}
+          onOpenChange={handleCloseDocumentModal}
+          isSubmitting={isSubmitting}
+          documentForm={documentForm}
+          onSubmit={onSubmitDocument}
+          onFileSelect={handleFileSelect}
+          selectedFile={selectedFile}
+        />
+
+        <DocumentViewerModal
+          open={!!viewingDocument}
+          onOpenChange={handleCloseDocumentViewer}
+          document={viewingDocument}
+          onDownload={handleDownloadDocument}
+        />
+
+        <JobDetailsUpdateModal
+          open={isJobDetailsUpdateOpen}
+          onOpenChange={handleCloseJobDetailsUpdate}
+          isSubmitting={isSubmitting}
+          jobDetailsForm={jobDetailsUpdateForm}
+          onSubmit={onSubmitJobDetailsUpdate}
         />
       </div>
-
-      <TimelineCard
-        sowData={sowData}
-        changeOrders={changeOrdersData}
-        paymentDraws={paymentDraws}
-        isLoading={isLoadingSOW || isLoadingChangeOrders}
-      />
-
-      <ScopeOfWorkCard
-        isLoading={isLoadingSOW}
-        sowData={sowData}
-        isCreating={isCreatingSOW}
-        isEditing={isEditingSOW}
-        isSubmitting={isSubmitting}
-        sowForm={sowForm}
-        onCreate={handleCreateSOW}
-        onEdit={handleEditSOW}
-        onCancel={handleCancelSOW}
-        onSubmit={onSubmitSOW}
-      />
-
-      <ChangeOrdersCard
-        isLoading={isLoadingChangeOrders}
-        changeOrders={changeOrdersData}
-        onEdit={handleEditChangeOrder}
-      />
-
-      <PaymentDrawsCard
-        paymentDraws={paymentDraws}
-        onView={handleViewPaymentDraw}
-        onEdit={handleEditPaymentDraw}
-        onCreate={handleCreatePaymentDraw}
-      />
-
-      <DocumentsCard
-        isLoading={isLoadingDocuments}
-        documents={documentsData}
-        onUpload={handleUploadDocument}
-        onDelete={handleDeleteDocument}
-        onDownload={handleDownloadDocument}
-        onView={handleViewDocument}
-      />
-
-      <ChangeOrderModal
-        open={isCreateChangeOrderOpen}
-        onOpenChange={handleCloseChangeOrderModal}
-        isEditing={!!editingChangeOrderId}
-        isSubmitting={isSubmitting}
-        changeOrderForm={changeOrderForm}
-        onSubmit={onSubmitChangeOrder}
-      />
-
-      <PaymentDrawModal
-        open={isCreatePaymentDrawOpen}
-        onOpenChange={handleClosePaymentDrawModal}
-        isEditing={!!editingPaymentDrawId}
-        isViewing={!!viewingPaymentDraw}
-        viewingPaymentDraw={viewingPaymentDraw}
-        isSubmitting={isSubmitting}
-        paymentDrawForm={paymentDrawForm}
-        onSubmit={onSubmitPaymentDraw}
-        onEdit={() => {
-          if (viewingPaymentDraw) {
-            handleEditPaymentDraw(viewingPaymentDraw);
-          }
-        }}
-      />
-
-      <DocumentUploadModal
-        open={isDocumentUploadOpen}
-        onOpenChange={handleCloseDocumentModal}
-        isSubmitting={isSubmitting}
-        documentForm={documentForm}
-        onSubmit={onSubmitDocument}
-        onFileSelect={handleFileSelect}
-        selectedFile={selectedFile}
-      />
-
-      <DocumentViewerModal
-        open={!!viewingDocument}
-        onOpenChange={handleCloseDocumentViewer}
-        document={viewingDocument}
-        onDownload={handleDownloadDocument}
-      />
-
-      <JobDetailsUpdateModal
-        open={isJobDetailsUpdateOpen}
-        onOpenChange={handleCloseJobDetailsUpdate}
-        isSubmitting={isSubmitting}
-        jobDetailsForm={jobDetailsUpdateForm}
-        onSubmit={onSubmitJobDetailsUpdate}
-      />
-    </div>
+    </>
   );
 }

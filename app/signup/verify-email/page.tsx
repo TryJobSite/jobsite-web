@@ -50,9 +50,9 @@ export default function VerifyEmailPage() {
       if (response?.data?.success) {
         setVerificationMessage('Email verified successfully!');
         setIsVerified(true);
-        // Redirect to home after a short delay
+        // Redirect to create customer page after a short delay
         setTimeout(() => {
-          router.push('/home');
+          router.push('/create-customer');
         }, 2000);
       } else {
         setVerificationError('Verification failed. Please check the code and try again.');
@@ -102,7 +102,9 @@ export default function VerifyEmailPage() {
                   <CheckCircle2 className="h-8 w-8 text-emerald-600" />
                 </div>
                 <CardTitle className="text-2xl font-bold">Email Verified!</CardTitle>
-                <CardDescription>Your email has been successfully verified. Redirecting...</CardDescription>
+                <CardDescription>
+                  Your email has been successfully verified. Redirecting to create your first customer...
+                </CardDescription>
               </>
             ) : (
               <>

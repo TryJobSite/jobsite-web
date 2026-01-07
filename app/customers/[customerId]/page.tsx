@@ -11,8 +11,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/(co
 import { Button } from '@/(components)/shadcn/ui/button';
 import { Input } from '@/(components)/shadcn/ui/input';
 import { Label } from '@/(components)/shadcn/ui/label';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Plus } from 'lucide-react';
 import Link from 'next/link';
+import { PageHeader } from '@/(components)/layout/page-header';
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from '@/(components)/shadcn/ui/breadcrumb';
 
 type Customer = {
   customerId: string;
@@ -299,362 +308,379 @@ export default function CustomerDetailPage() {
     }
   };
 
+  const customerName = `${customer.firstName} ${customer.lastName}`;
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Button variant="outline" onClick={() => router.push('/customers')}>
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back
-        </Button>
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            {customer.firstName} {customer.lastName}
-          </h1>
-          <p className="text-slate-600">Customer Details</p>
-        </div>
-      </div>
-
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card
-          className={`${editingSection === 'contact' ? 'ring-2 ring-primary' : ''} ${
-            editingSection !== 'contact' ? 'cursor-pointer transition-shadow hover:shadow-md' : ''
-          }`}
-          onClick={editingSection !== 'contact' ? handleEditContact : undefined}
-        >
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>Contact Information</CardTitle>
-              {editingSection === 'contact' && (
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleCancel();
-                    }}
-                    disabled={isSubmitting}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      contactForm.handleSubmit(onSubmitContact)();
-                    }}
-                    disabled={!contactForm.formState.isDirty || isSubmitting}
-                  >
-                    {isSubmitting ? 'Saving...' : 'Save'}
-                  </Button>
-                </div>
-              )}
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {editingSection === 'contact' ? (
-              <form
-                onSubmit={contactForm.handleSubmit(onSubmitContact)}
-                className="space-y-4"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <div>
-                  <Label htmlFor="email" className="text-sm text-slate-500">
-                    Email
-                  </Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    {...contactForm.register('email')}
-                    className="mt-1"
-                    placeholder="name@company.com"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="phoneNumber" className="text-sm text-slate-500">
-                    Phone
-                  </Label>
-                  <Input
-                    id="phoneNumber"
-                    type="tel"
-                    {...contactForm.register('phoneNumber')}
-                    className="mt-1"
-                    placeholder="Phone number"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="preferredContactMethod" className="text-sm text-slate-500">
-                    Preferred Contact Method
-                  </Label>
-                  <select
-                    id="preferredContactMethod"
-                    {...contactForm.register('preferredContactMethod')}
-                    className="mt-1 flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2
-                      text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm
-                      file:font-medium placeholder:text-slate-500 focus-visible:ring-2
-                      focus-visible:ring-slate-950 focus-visible:ring-offset-2 focus-visible:outline-none
-                      disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    <option value="">Select method</option>
-                    {contactMethods.map((method) => (
-                      <option key={method} value={method}>
-                        {formatContactMethod(method)}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </form>
-            ) : (
-              <>
-                <div>
-                  <div className="text-sm text-slate-500">Email</div>
-                  <div className="font-medium">{customer.email}</div>
-                </div>
-                {customer.phoneNumber && (
-                  <div>
-                    <div className="text-sm text-slate-500">Phone</div>
-                    <div className="font-medium">{customer.phoneNumber}</div>
+    <>
+      <PageHeader
+        breadcrumb={
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbLink asChild>
+                  <Link href="/customers" className="text-2xl">
+                    Customers
+                  </Link>
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbPage className="text-2xl">{customerName}</BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
+        }
+      />
+      <div className="space-y-6 p-6">
+        <div className="grid gap-6 md:grid-cols-2">
+          <Card
+            className={`${editingSection === 'contact' ? 'ring-2 ring-primary' : ''} ${
+              editingSection !== 'contact' ? 'cursor-pointer transition-shadow hover:shadow-md' : ''
+            }`}
+            onClick={editingSection !== 'contact' ? handleEditContact : undefined}
+          >
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle>Contact Information</CardTitle>
+                {editingSection === 'contact' && (
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleCancel();
+                      }}
+                      disabled={isSubmitting}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        contactForm.handleSubmit(onSubmitContact)();
+                      }}
+                      disabled={!contactForm.formState.isDirty || isSubmitting}
+                    >
+                      {isSubmitting ? 'Saving...' : 'Save'}
+                    </Button>
                   </div>
                 )}
-                {customer.preferredContactMethod && (
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {editingSection === 'contact' ? (
+                <form
+                  onSubmit={contactForm.handleSubmit(onSubmitContact)}
+                  className="space-y-4"
+                  onClick={(e) => e.stopPropagation()}
+                >
                   <div>
-                    <div className="text-sm text-slate-500">Preferred Contact Method</div>
-                    <div className="font-medium">{formatContactMethod(customer.preferredContactMethod)}</div>
+                    <Label htmlFor="email" className="text-sm text-slate-500">
+                      Email
+                    </Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      {...contactForm.register('email')}
+                      className="mt-1"
+                      placeholder="name@company.com"
+                    />
                   </div>
-                )}
-              </>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card
-          className={`${editingSection === 'address' ? 'ring-2 ring-primary' : ''} ${
-            editingSection !== 'address' ? 'cursor-pointer transition-shadow hover:shadow-md' : ''
-          }`}
-          onClick={editingSection !== 'address' ? handleEditAddress : undefined}
-        >
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>Address</CardTitle>
-              {editingSection === 'address' && (
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleCancel();
-                    }}
-                    disabled={isSubmitting}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      addressForm.handleSubmit(onSubmitAddress)();
-                    }}
-                    disabled={!addressForm.formState.isDirty || isSubmitting}
-                  >
-                    {isSubmitting ? 'Saving...' : 'Save'}
-                  </Button>
-                </div>
+                  <div>
+                    <Label htmlFor="phoneNumber" className="text-sm text-slate-500">
+                      Phone
+                    </Label>
+                    <Input
+                      id="phoneNumber"
+                      type="tel"
+                      {...contactForm.register('phoneNumber')}
+                      className="mt-1"
+                      placeholder="Phone number"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="preferredContactMethod" className="text-sm text-slate-500">
+                      Preferred Contact Method
+                    </Label>
+                    <select
+                      id="preferredContactMethod"
+                      {...contactForm.register('preferredContactMethod')}
+                      className="mt-1 flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2
+                        text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm
+                        file:font-medium placeholder:text-slate-500 focus-visible:ring-2
+                        focus-visible:ring-slate-950 focus-visible:ring-offset-2 focus-visible:outline-none
+                        disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <option value="">Select method</option>
+                      {contactMethods.map((method) => (
+                        <option key={method} value={method}>
+                          {formatContactMethod(method)}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </form>
+              ) : (
+                <>
+                  <div>
+                    <div className="text-sm text-slate-500">Email</div>
+                    <div className="font-medium">{customer.email}</div>
+                  </div>
+                  {customer.phoneNumber && (
+                    <div>
+                      <div className="text-sm text-slate-500">Phone</div>
+                      <div className="font-medium">{customer.phoneNumber}</div>
+                    </div>
+                  )}
+                  {customer.preferredContactMethod && (
+                    <div>
+                      <div className="text-sm text-slate-500">Preferred Contact Method</div>
+                      <div className="font-medium">
+                        {formatContactMethod(customer.preferredContactMethod)}
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {editingSection === 'address' ? (
-              <form
-                onSubmit={addressForm.handleSubmit(onSubmitAddress)}
-                className="space-y-4"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <div>
-                  <Label htmlFor="addressLine1" className="text-sm text-slate-500">
-                    Address Line 1
-                  </Label>
-                  <Input
-                    id="addressLine1"
-                    {...addressForm.register('addressLine1')}
-                    className="mt-1"
-                    placeholder="Street address"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="addressLine2" className="text-sm text-slate-500">
-                    Address Line 2
-                  </Label>
-                  <Input
-                    id="addressLine2"
-                    {...addressForm.register('addressLine2')}
-                    className="mt-1"
-                    placeholder="Apartment, suite, etc."
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="city" className="text-sm text-slate-500">
-                    City
-                  </Label>
-                  <Input id="city" {...addressForm.register('city')} className="mt-1" placeholder="City" />
-                </div>
-                <div>
-                  <Label htmlFor="state" className="text-sm text-slate-500">
-                    State
-                  </Label>
-                  <Input id="state" {...addressForm.register('state')} className="mt-1" placeholder="State" />
-                </div>
-                <div>
-                  <Label htmlFor="postalCode" className="text-sm text-slate-500">
-                    Postal Code
-                  </Label>
-                  <Input
-                    id="postalCode"
-                    {...addressForm.register('postalCode')}
-                    className="mt-1"
-                    placeholder="Postal code"
-                  />
-                </div>
-              </form>
-            ) : (
-              <div className="space-y-2">
-                <div className="font-medium">{customer.addressLine1}</div>
-                {customer.addressLine2 && <div>{customer.addressLine2}</div>}
-                <div>
-                  {customer.city}, {customer.state} {customer.postalCode}
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card
-        className={`${editingSection === 'notes' ? 'ring-2 ring-primary' : ''} ${
-          editingSection !== 'notes' ? 'cursor-pointer transition-shadow hover:shadow-md' : ''
-        }`}
-        onClick={editingSection !== 'notes' ? handleEditNotes : undefined}
-      >
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>Notes</CardTitle>
-            {editingSection === 'notes' && (
-              <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleCancel();
-                  }}
-                  disabled={isSubmitting}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    notesForm.handleSubmit(onSubmitNotes)();
-                  }}
-                  disabled={!notesForm.formState.isDirty || isSubmitting}
-                >
-                  {isSubmitting ? 'Saving...' : 'Save'}
-                </Button>
-              </div>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent>
-          {editingSection === 'notes' ? (
-            <form onSubmit={notesForm.handleSubmit(onSubmitNotes)} onClick={(e) => e.stopPropagation()}>
-              <textarea
-                {...notesForm.register('notes')}
-                className="flex min-h-[80px] w-full rounded-md border border-slate-200 bg-white px-3 py-2
-                  text-sm ring-offset-white placeholder:text-slate-500 focus-visible:ring-2
-                  focus-visible:ring-slate-950 focus-visible:ring-offset-2 focus-visible:outline-none
-                  disabled:cursor-not-allowed disabled:opacity-50"
-                placeholder="Add notes about this customer..."
-                rows={4}
-              />
-            </form>
-          ) : (
-            <p className="text-slate-700">{customer.notes || 'No notes'}</p>
-          )}
-        </CardContent>
-      </Card>
-
-      <div>
-        <div className="mb-4 flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-bold tracking-tight">Jobs</h2>
-            <p className="text-slate-600">Jobs for this customer</p>
-          </div>
-        </div>
-
-        {isLoadingJobs ? (
-          <div className="text-slate-500">Loading jobs...</div>
-        ) : customerJobs.length === 0 ? (
-          <Card>
-            <CardContent className="py-12 text-center">
-              <p className="text-slate-500">No jobs found for this customer.</p>
             </CardContent>
           </Card>
-        ) : (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {customerJobs.map((job) => (
-              <Link key={job.jobId} href={`/jobs/${job.jobId}`}>
-                <Card className="flex cursor-pointer flex-col transition-shadow hover:shadow-md">
-                  <CardHeader>
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1">
-                        <CardTitle className="text-lg">{job.title}</CardTitle>
-                        {job.jobNumber && (
-                          <CardDescription className="mt-1">Job #{job.jobNumber}</CardDescription>
+
+          <Card
+            className={`${editingSection === 'address' ? 'ring-2 ring-primary' : ''} ${
+              editingSection !== 'address' ? 'cursor-pointer transition-shadow hover:shadow-md' : ''
+            }`}
+            onClick={editingSection !== 'address' ? handleEditAddress : undefined}
+          >
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle>Address</CardTitle>
+                {editingSection === 'address' && (
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleCancel();
+                      }}
+                      disabled={isSubmitting}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        addressForm.handleSubmit(onSubmitAddress)();
+                      }}
+                      disabled={!addressForm.formState.isDirty || isSubmitting}
+                    >
+                      {isSubmitting ? 'Saving...' : 'Save'}
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {editingSection === 'address' ? (
+                <form
+                  onSubmit={addressForm.handleSubmit(onSubmitAddress)}
+                  className="space-y-4"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div>
+                    <Label htmlFor="addressLine1" className="text-sm text-slate-500">
+                      Address Line 1
+                    </Label>
+                    <Input
+                      id="addressLine1"
+                      {...addressForm.register('addressLine1')}
+                      className="mt-1"
+                      placeholder="Street address"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="addressLine2" className="text-sm text-slate-500">
+                      Address Line 2
+                    </Label>
+                    <Input
+                      id="addressLine2"
+                      {...addressForm.register('addressLine2')}
+                      className="mt-1"
+                      placeholder="Apartment, suite, etc."
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="city" className="text-sm text-slate-500">
+                      City
+                    </Label>
+                    <Input id="city" {...addressForm.register('city')} className="mt-1" placeholder="City" />
+                  </div>
+                  <div>
+                    <Label htmlFor="state" className="text-sm text-slate-500">
+                      State
+                    </Label>
+                    <Input
+                      id="state"
+                      {...addressForm.register('state')}
+                      className="mt-1"
+                      placeholder="State"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="postalCode" className="text-sm text-slate-500">
+                      Postal Code
+                    </Label>
+                    <Input
+                      id="postalCode"
+                      {...addressForm.register('postalCode')}
+                      className="mt-1"
+                      placeholder="Postal code"
+                    />
+                  </div>
+                </form>
+              ) : (
+                <div className="space-y-2">
+                  <div className="font-medium">{customer.addressLine1}</div>
+                  {customer.addressLine2 && <div>{customer.addressLine2}</div>}
+                  <div>
+                    {customer.city}, {customer.state} {customer.postalCode}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        <Card
+          className={`${editingSection === 'notes' ? 'ring-2 ring-primary' : ''} ${
+            editingSection !== 'notes' ? 'cursor-pointer transition-shadow hover:shadow-md' : ''
+          }`}
+          onClick={editingSection !== 'notes' ? handleEditNotes : undefined}
+        >
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>Notes</CardTitle>
+              {editingSection === 'notes' && (
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleCancel();
+                    }}
+                    disabled={isSubmitting}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      notesForm.handleSubmit(onSubmitNotes)();
+                    }}
+                    disabled={!notesForm.formState.isDirty || isSubmitting}
+                  >
+                    {isSubmitting ? 'Saving...' : 'Save'}
+                  </Button>
+                </div>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent>
+            {editingSection === 'notes' ? (
+              <form onSubmit={notesForm.handleSubmit(onSubmitNotes)} onClick={(e) => e.stopPropagation()}>
+                <textarea
+                  {...notesForm.register('notes')}
+                  className="flex min-h-[80px] w-full rounded-md border border-slate-200 bg-white px-3 py-2
+                    text-sm ring-offset-white placeholder:text-slate-500 focus-visible:ring-2
+                    focus-visible:ring-slate-950 focus-visible:ring-offset-2 focus-visible:outline-none
+                    disabled:cursor-not-allowed disabled:opacity-50"
+                  placeholder="Add notes about this customer..."
+                  rows={4}
+                />
+              </form>
+            ) : (
+              <p className="text-slate-700">{customer.notes || 'No notes'}</p>
+            )}
+          </CardContent>
+        </Card>
+
+        <div>
+          <div className="mb-4 flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-bold tracking-tight">Jobs</h2>
+              <p className="text-slate-600">Jobs for this customer</p>
+            </div>
+          </div>
+
+          {isLoadingJobs ? (
+            <div className="text-slate-500">Loading jobs...</div>
+          ) : customerJobs.length === 0 ? (
+            <Card>
+              <CardContent className="py-12 text-center">
+                <p className="text-slate-500">No jobs found for this customer.</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {customerJobs.map((job) => (
+                <Link key={job.jobId} href={`/jobs/${job.jobId}`}>
+                  <Card className="flex cursor-pointer flex-col transition-shadow hover:shadow-md">
+                    <CardHeader>
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1">
+                          <CardTitle className="text-lg">{job.title}</CardTitle>
+                          {job.jobNumber && (
+                            <CardDescription className="mt-1">Job #{job.jobNumber}</CardDescription>
+                          )}
+                        </div>
+                        <span
+                          className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${getStatusColor(
+                            job.status )}`}
+                        >
+                          {formatStatus(job.status)}
+                        </span>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="flex-1 space-y-3">
+                      {job.description && (
+                        <p className="line-clamp-2 text-sm text-slate-600">{job.description}</p>
+                      )}
+
+                      <div className="space-y-2 text-sm">
+                        {job.budget !== null && (
+                          <div className="flex justify-between">
+                            <span className="text-slate-500">Budget:</span>
+                            <span className="font-medium">{formatCurrency(job.budget)}</span>
+                          </div>
+                        )}
+
+                        {job.estimatedStartDate && (
+                          <div className="flex justify-between">
+                            <span className="text-slate-500">Est. Start:</span>
+                            <span>{formatDate(job.estimatedStartDate)}</span>
+                          </div>
+                        )}
+
+                        {job.estimatedEndDate && (
+                          <div className="flex justify-between">
+                            <span className="text-slate-500">Est. End:</span>
+                            <span>{formatDate(job.estimatedEndDate)}</span>
+                          </div>
                         )}
                       </div>
-                      <span
-                        className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${getStatusColor(
-                          job.status )}`}
-                      >
-                        {formatStatus(job.status)}
-                      </span>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="flex-1 space-y-3">
-                    {job.description && (
-                      <p className="line-clamp-2 text-sm text-slate-600">{job.description}</p>
-                    )}
-
-                    <div className="space-y-2 text-sm">
-                      {job.budget !== null && (
-                        <div className="flex justify-between">
-                          <span className="text-slate-500">Budget:</span>
-                          <span className="font-medium">{formatCurrency(job.budget)}</span>
-                        </div>
-                      )}
-
-                      {job.estimatedStartDate && (
-                        <div className="flex justify-between">
-                          <span className="text-slate-500">Est. Start:</span>
-                          <span>{formatDate(job.estimatedStartDate)}</span>
-                        </div>
-                      )}
-
-                      {job.estimatedEndDate && (
-                        <div className="flex justify-between">
-                          <span className="text-slate-500">Est. End:</span>
-                          <span>{formatDate(job.estimatedEndDate)}</span>
-                        </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
-            ))}
-          </div>
-        )}
+                    </CardContent>
+                  </Card>
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+    </>
   );
 }
