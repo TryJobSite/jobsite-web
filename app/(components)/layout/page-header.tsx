@@ -4,8 +4,8 @@ export function PageHeader({
   action,
   breadcrumb,
 }: {
-  title?: string;
-  subtitle?: string;
+  title?: string | React.ReactNode;
+  subtitle?: string | React.ReactNode;
   action?: React.ReactNode;
   breadcrumb?: React.ReactNode;
 }) {

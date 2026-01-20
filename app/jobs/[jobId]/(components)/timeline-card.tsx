@@ -1,32 +1,29 @@
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/(components)/shadcn/ui/card';
-import { ScopeOfWork, ChangeOrder, PaymentDraw } from './types';
-import { formatDate, formatCurrency } from './utils';
-
-type TimelineItem = {
-  id: string;
-  type: 'sow-line-item' | 'payment-draw' | 'change-order';
-  title: string;
-  description: string;
-  startDate: string | null;
-  endDate: string | null;
-  date: string | null; // For single-date items
-  amount?: number | null;
-  metadata?: {
-    contractor?: string | null;
-    status?: string;
-  };
-};
+import { ScopeOfWork } from './types';
+import { formatDate } from './utils';
 
 type TimelineCardProps = {
   sowData: ScopeOfWork | null | undefined;
-  changeOrders: ChangeOrder[] | undefined;
-  paymentDraws: PaymentDraw[] | undefined;
+  changeOrders?: any[] | undefined;
+  paymentDraws?: any[] | undefined;
   isLoading: boolean;
 };
 
-export function TimelineCard({ sowData, changeOrders, paymentDraws, isLoading }: TimelineCardProps) {
+type TaskStatus = 'planning' | 'progress' | 'done' | 'planned';
+
+type TimelineLineItem = {
+  id: string;
+  description: string;
+  startDate: Date | null;
+  endDate: Date | null;
+  status: TaskStatus;
+  plannedStart?: Date | null;
+  plannedEnd?: Date | null;
+};
+
+export function TimelineCard({ sowData, isLoading }: TimelineCardProps) {
   if (isLoading) {
     return (
       <Card>
@@ -40,100 +37,73 @@ export function TimelineCard({ sowData, changeOrders, paymentDraws, isLoading }:
     );
   }
 
-  // Build timeline items from all sources
-  const timelineItems: TimelineItem[] = [];
-
-  // Add Scope of Work line items
-  if (sowData?.lineItems) {
-    sowData.lineItems.forEach((item, index) => {
-      timelineItems.push({
-        id: `sow-${index}`,
-        type: 'sow-line-item',
-        title: item.description,
-        description: item.contractor || 'No contractor assigned',
-        startDate: item.startDate || null,
-        endDate: item.endDate || null,
-        date: null,
-        amount: item.price || null,
-        metadata: {
-          contractor: item.contractor || null,
-        },
-      });
-    });
+  // Only use scope of work line items
+  if (!sowData?.lineItems || sowData.lineItems.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Timeline</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="py-12 text-center text-slate-500">No timeline data available.</div>
+        </CardContent>
+      </Card>
+    );
   }
 
-  // Add Payment Draws
-  if (paymentDraws) {
-    paymentDraws.forEach((draw) => {
-      timelineItems.push({
-        id: `draw-${draw.paymentDrawId}`,
-        type: 'payment-draw',
-        title: `Payment Draw - ${formatCurrency(draw.paymentAmount)}`,
-        description: draw.description || 'Payment draw',
-        startDate: null,
-        endDate: null,
-        date: draw.expectedPaymentDate || draw.dateRequested || draw.createdAt,
-        amount: draw.paymentAmount || null,
-        metadata: {
-          status: draw.status,
-        },
-      });
-    });
-  }
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
 
-  // Add Change Orders
-  if (changeOrders) {
-    changeOrders.forEach((co) => {
-      const total = co.lineItems.reduce((sum, item) => sum + (item.price || 0), 0);
-      timelineItems.push({
-        id: `co-${co.changeOrderId}`,
-        type: 'change-order',
-        title: `Change Order - ${formatCurrency(total)}`,
-        description: co.notes || 'Change order',
-        startDate: null,
-        endDate: null,
-        date: co.createdAt,
-        amount: total,
-        metadata: {
-          status: (co as any).status || 'created',
-        },
-      });
-    });
-  }
+  // Build line items with status
+  const lineItems: TimelineLineItem[] = sowData.lineItems.map((item, index) => {
+    const startDate = item.startDate ? new Date(item.startDate) : null;
+    const endDate = item.endDate ? new Date(item.endDate) : null;
 
-  // Sort items by date (start date for range items, date for single-date items)
-  timelineItems.sort((a, b) => {
-    const dateA = a.startDate || a.date;
-    const dateB = b.startDate || b.date;
-    if (!dateA && !dateB) return 0;
-    if (!dateA) return 1;
-    if (!dateB) return -1;
-    return new Date(dateA).getTime() - new Date(dateB).getTime();
+    if (startDate) startDate.setHours(0, 0, 0, 0);
+    if (endDate) endDate.setHours(0, 0, 0, 0);
+
+    let status: TaskStatus = 'planning';
+    let plannedStart: Date | null = null;
+    let plannedEnd: Date | null = null;
+
+    if (startDate && endDate) {
+      if (endDate < now) {
+        status = 'done';
+      } else if (startDate <= now) {
+        status = 'progress';
+      } else {
+        status = 'planned';
+      }
+    } else if (startDate) {
+      if (startDate < now) {
+        status = 'progress';
+      } else {
+        status = 'planned';
+      }
+    } else {
+      status = 'planning';
+    }
+
+    return {
+      id: `item-${index}`,
+      description: item.description,
+      startDate,
+      endDate,
+      status,
+      plannedStart: status === 'planned' ? startDate : null,
+      plannedEnd: status === 'planned' ? endDate : null,
+    };
   });
 
-  // Group items by date ranges for parallel display
-  const getItemDate = (item: TimelineItem): Date | null => {
-    const dateStr = item.startDate || item.date;
-    return dateStr ? new Date(dateStr) : null;
-  };
-
-  const getItemEndDate = (item: TimelineItem): Date | null => {
-    if (item.endDate) return new Date(item.endDate);
-    if (item.startDate) return new Date(item.startDate);
-    if (item.date) return new Date(item.date);
-    return null;
-  };
-
-  // Calculate timeline bounds
-  const allDates = timelineItems
+  // Calculate min and max dates from line items only
+  const allDates = lineItems
     .flatMap((item) => {
       const dates: Date[] = [];
-      if (item.startDate) dates.push(new Date(item.startDate));
-      if (item.endDate) dates.push(new Date(item.endDate));
-      if (item.date) dates.push(new Date(item.date));
+      if (item.startDate) dates.push(item.startDate);
+      if (item.endDate) dates.push(item.endDate);
       return dates;
     })
-    .filter((d) => !isNaN(d.getTime()));
+    .filter((d) => d && !isNaN(d.getTime()));
 
   if (allDates.length === 0) {
     return (
@@ -150,90 +120,91 @@ export function TimelineCard({ sowData, changeOrders, paymentDraws, isLoading }:
 
   const minDate = new Date(Math.min(...allDates.map((d) => d.getTime())));
   const maxDate = new Date(Math.max(...allDates.map((d) => d.getTime())));
-  const totalDays = Math.ceil((maxDate.getTime() - minDate.getTime()) / (1000 * 60 * 60 * 24)) || 1;
+  minDate.setHours(0, 0, 0, 0);
+  maxDate.setHours(0, 0, 0, 0);
 
-  // Assign lanes to items to show parallel items
-  const assignLanes = (items: TimelineItem[]): Map<string, number> => {
-    const lanes = new Map<string, number>();
-    const sortedItems = [...items].sort((a, b) => {
-      const startA = getItemDate(a)?.getTime() || 0;
-      const startB = getItemDate(b)?.getTime() || 0;
-      return startA - startB;
-    });
+  // Calculate total days
+  const totalDays = Math.ceil((maxDate.getTime() - minDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
 
-    sortedItems.forEach((item) => {
-      const itemStart = getItemDate(item)?.getTime() || 0;
-      const itemEnd = getItemEndDate(item)?.getTime() || itemStart;
+  // Determine if we should use days or weeks
+  const useWeeks = totalDays > 28;
+  const cellUnit = useWeeks ? 7 : 1; // 1 week = 7 days, or 1 day
+  const totalCells = useWeeks ? Math.ceil(totalDays / 7) : totalDays;
 
-      // Find the first available lane
-      let lane = 0;
-      const occupiedLanes = Array.from(lanes.entries())
-        .filter(([id, _]) => {
-          const otherItem = sortedItems.find((i) => i.id === id);
-          if (!otherItem) return false;
-          const otherStart = getItemDate(otherItem)?.getTime() || 0;
-          const otherEnd = getItemEndDate(otherItem)?.getTime() || otherStart;
-          return itemStart < otherEnd && itemEnd > otherStart;
-        })
-        .map(([_, laneNum]) => laneNum);
+  // Generate date cells
+  const dateCells: Date[] = [];
+  for (let i = 0; i < totalCells; i++) {
+    const cellDate = new Date(minDate);
+    cellDate.setDate(minDate.getDate() + i * cellUnit);
+    dateCells.push(cellDate);
+  }
 
-      while (occupiedLanes.includes(lane)) {
-        lane++;
-      }
-
-      lanes.set(item.id, lane);
-    });
-
-    return lanes;
-  };
-
-  const lanes = assignLanes(timelineItems);
-  const maxLanes = Math.max(...Array.from(lanes.values()), 0) + 1;
-
-  const getItemPosition = (item: TimelineItem): { left: number; width: number; top: number } => {
-    const startDate = getItemDate(item);
-    const endDate = getItemEndDate(item);
-
-    if (!startDate) {
-      return { left: 0, width: 0, top: 0 };
-    }
-
-    const daysFromStart = Math.max(
-      0,
-      Math.ceil((startDate.getTime() - minDate.getTime()) / (1000 * 60 * 60 * 24))
-    );
-    const left = Math.min(100, (daysFromStart / totalDays) * 100);
-
-    let width = 3; // Minimum width for single-day items (3%)
-    if (endDate && endDate.getTime() !== startDate.getTime()) {
-      const itemDays = Math.max(
-        1,
-        Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1
-      );
-      width = Math.min(100 - left, (itemDays / totalDays) * 100);
+  // Helper to get cell index for a date
+  const getCellIndex = (date: Date): number => {
+    if (useWeeks) {
+      const daysDiff = Math.floor((date.getTime() - minDate.getTime()) / (1000 * 60 * 60 * 24));
+      return Math.floor(daysDiff / 7);
     } else {
-      width = Math.min(100 - left, 3);
+      const daysDiff = Math.floor((date.getTime() - minDate.getTime()) / (1000 * 60 * 60 * 24));
+      return daysDiff;
     }
-
-    const lane = lanes.get(item.id) || 0;
-    const top = lane * 70 + 20;
-
-    return { left: Math.max(0, left), width: Math.max(2, width), top };
   };
 
-  const getItemColor = (type: TimelineItem['type'], status?: string): string => {
-    if (type === 'sow-line-item') return 'bg-blue-500';
-    if (type === 'payment-draw') {
-      if (status === 'paid') return 'bg-emerald-500';
-      if (status === 'requested') return 'bg-yellow-500';
-      return 'bg-slate-500';
+  // Helper to format date for display in cells
+  const formatDateCell = (date: Date): string => {
+    // Show month/day format (e.g., "1/12" for January 12th)
+    const month = date.getMonth() + 1; // getMonth() returns 0-11
+    const day = date.getDate();
+    return `${month}/${day}`;
+  };
+
+  // Format date range header
+  const formatDateRange = (): string => {
+    const startMonth = minDate.toLocaleDateString('en-US', { month: 'long' });
+    const endMonth = maxDate.toLocaleDateString('en-US', { month: 'long' });
+    const startDay = minDate.getDate();
+    const endDay = maxDate.getDate();
+    return `${startMonth} ${startDay} - ${endMonth} ${endDay}`;
+  };
+
+  // Helper to get status color
+  const getStatusColor = (status: TaskStatus): string => {
+    switch (status) {
+      case 'planning':
+        return 'bg-blue-500';
+      case 'progress':
+        return 'bg-orange-500';
+      case 'done':
+        return 'bg-green-500';
+      case 'planned':
+        return 'bg-blue-200'; // Light blue for planned
+      default:
+        return 'bg-slate-300';
     }
-    if (type === 'change-order') {
-      if (status === 'paid') return 'bg-emerald-500';
-      if (status === 'paymentRequested') return 'bg-yellow-500';
-      return 'bg-purple-500';
+  };
+
+  // Helper to get cell range for a date range
+  const getCellRange = (
+    start: Date | null,
+    end: Date | null
+  ): { startCell: number; endCell: number } | null => {
+    if (!start && !end) return null;
+
+    let startCell = 0;
+    let endCell = totalCells - 1;
+
+    if (start) {
+      startCell = getCellIndex(start);
+      if (startCell < 0) startCell = 0;
+      if (startCell >= totalCells) startCell = totalCells - 1;
     }
-    return 'bg-slate-500';
+    if (end) {
+      endCell = getCellIndex(end);
+      if (endCell < 0) endCell = 0;
+      if (endCell >= totalCells) endCell = totalCells - 1;
+    }
+
+    return { startCell, endCell };
   };
 
   return (
@@ -242,78 +213,148 @@ export function TimelineCard({ sowData, changeOrders, paymentDraws, isLoading }:
         <CardTitle>Timeline</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="relative overflow-x-auto" style={{ minHeight: `${maxLanes * 70 + 100}px` }}>
-          {/* Timeline axis */}
-          <div className="absolute right-0 bottom-0 left-0 h-1 bg-slate-200" style={{ minWidth: '100%' }} />
-          <div className="absolute bottom-0 left-0 h-3 w-0.5 bg-slate-400" />
-          <div className="absolute right-0 bottom-0 h-3 w-0.5 bg-slate-400" />
-
-          {/* Date labels */}
-          <div className="mb-2 flex justify-between text-xs text-slate-500">
-            <span>{formatDate(minDate.toISOString())}</span>
-            <span>{formatDate(maxDate.toISOString())}</span>
-          </div>
-
-          {/* Timeline items */}
-          {timelineItems.map((item) => {
-            const position = getItemPosition(item);
-            if (position.width === 0) return null;
-
-            return (
+        <div className="mb-2 text-sm text-slate-600">{formatDateRange()}</div>
+        <div className="relative">
+          {/* Fixed description column */}
+          <div className="absolute top-0 left-0 z-20 w-48 border-r border-slate-200 bg-white">
+            {/* Header spacer */}
+            <div className="mb-2 border-b border-slate-200" style={{ minHeight: '28px' }}></div>
+            {/* Line item labels */}
+            {lineItems.map((item) => (
               <div
                 key={item.id}
-                className="absolute rounded-md border border-white/20 p-2 text-xs shadow-md transition-all
-                  hover:z-10 hover:scale-105"
-                style={{
-                  left: `${position.left}%`,
-                  width: `${position.width}%`,
-                  top: `${position.top}px`,
-                  backgroundColor: getItemColor(item.type, item.metadata?.status),
-                  color: 'white',
-                  minWidth: position.width < 5 ? '80px' : '120px',
-                  zIndex: 1,
-                }}
-                title={`${item.title} - ${item.description}`}
+                className="border-b border-slate-200 bg-white px-3 py-3 text-sm"
+                style={{ minHeight: '60px' }}
               >
-                <div className="truncate font-medium">{item.title}</div>
-                {position.width >= 5 && (
-                  <>
-                    <div className="truncate text-xs opacity-90">{item.description}</div>
-                    {item.amount && (
-                      <div className="mt-1 text-xs font-semibold">{formatCurrency(item.amount)}</div>
-                    )}
-                    {item.startDate && item.endDate && (
-                      <div className="mt-1 text-xs opacity-75">
-                        {formatDate(item.startDate)} - {formatDate(item.endDate)}
-                      </div>
-                    )}
-                    {item.date && !item.startDate && (
-                      <div className="mt-1 text-xs opacity-75">{formatDate(item.date)}</div>
-                    )}
-                  </>
-                )}
+                <div className="truncate font-medium text-slate-900">{item.description}</div>
               </div>
-            );
-          })}
+            ))}
+          </div>
+
+          {/* Scrollable time cells */}
+          <div className="overflow-x-auto pl-48">
+            <div className="inline-block min-w-full">
+              {/* Header with dates */}
+              <div className="mb-2 flex">
+                {dateCells.map((date, index) => (
+                  <div
+                    key={index}
+                    className="flex-1 border-l border-slate-200 px-1 text-center text-xs text-slate-600"
+                    style={{ minWidth: '60px' }}
+                  >
+                    {formatDateCell(date)}
+                  </div>
+                ))}
+              </div>
+
+              {/* Grid lines */}
+              <div className="relative">
+                {/* Vertical grid lines */}
+                <div className="absolute inset-0 flex">
+                  {dateCells.map((_, index) => (
+                    <div
+                      key={index}
+                      className="flex-1 border-l border-slate-200"
+                      style={{ minWidth: '60px' }}
+                    ></div>
+                  ))}
+                </div>
+
+                {/* Line items */}
+                <div className="relative">
+                  {lineItems.map((item) => {
+                    const cellRange = getCellRange(item.startDate, item.endDate);
+                    const isPlanned = item.status === 'planned';
+
+                    return (
+                      <div
+                        key={item.id}
+                        className="relative border-b border-slate-200"
+                        style={{ minHeight: '60px' }}
+                      >
+                        {/* Timeline cells */}
+                        <div className="relative flex" style={{ minHeight: '60px' }}>
+                          {cellRange && (
+                            <>
+                              {/* Solid bar for actual dates */}
+                              {!isPlanned && (
+                                <>
+                                  <div
+                                    className={`absolute top-1/2 h-6 -translate-y-1/2 ${getStatusColor(
+                                    item.status )}`}
+                                    style={{
+                                      left: `${(cellRange.startCell / totalCells) * 100}%`,
+                                      width: `${
+                                        ((cellRange.endCell - cellRange.startCell + 1) / totalCells) * 100
+                                      }%`,
+                                      opacity: 0.8,
+                                    }}
+                                  />
+                                  {/* Status dot at start */}
+                                  <div
+                                    className={`absolute top-1/2 left-1 z-10 h-3 w-3 -translate-y-1/2
+                                    rounded-full border-2 border-white ${getStatusColor(item.status)}`}
+                                    style={{
+                                      left: `${(cellRange.startCell / totalCells) * 100}%`,
+                                    }}
+                                  />
+                                </>
+                              )}
+                              {/* Dashed bar for planned dates */}
+                              {isPlanned && (
+                                <>
+                                  <div
+                                    className="absolute top-1/2 h-6 -translate-y-1/2 border-2 border-dashed
+                                      border-blue-400 bg-blue-100"
+                                    style={{
+                                      left: `${(cellRange.startCell / totalCells) * 100}%`,
+                                      width: `${
+                                        ((cellRange.endCell - cellRange.startCell + 1) / totalCells) * 100
+                                      }%`,
+                                    }}
+                                  />
+                                  {/* Status dot at start */}
+                                  <div
+                                    className="absolute top-1/2 left-1 z-10 h-3 w-3 -translate-y-1/2
+                                      rounded-full border-2 border-white bg-blue-500"
+                                    style={{
+                                      left: `${(cellRange.startCell / totalCells) * 100}%`,
+                                    }}
+                                  />
+                                </>
+                              )}
+                            </>
+                          )}
+                          {dateCells.map((_, cellIndex) => (
+                            <div
+                              key={cellIndex}
+                              className="relative flex-1 border-l border-slate-200"
+                              style={{ minWidth: '60px' }}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Legend */}
-        <div className="mt-8 flex flex-wrap gap-4 text-sm">
+        <div className="mt-6 flex flex-wrap items-center gap-6 text-sm">
           <div className="flex items-center gap-2">
-            <div className="h-4 w-4 rounded bg-blue-500" />
-            <span>Scope of Work</span>
+            <div className="h-3 w-3 rounded-full bg-blue-500" />
+            <span className="text-slate-700">Start/ Planning</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="h-4 w-4 rounded bg-purple-500" />
-            <span>Change Order</span>
+            <div className="h-3 w-3 rounded-full bg-orange-500" />
+            <span className="text-slate-700">Progress/ Hands-on</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="h-4 w-4 rounded bg-yellow-500" />
-            <span>Payment Draw (Requested)</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="h-4 w-4 rounded bg-emerald-500" />
-            <span>Paid</span>
+            <div className="h-3 w-3 rounded-full bg-green-500" />
+            <span className="text-slate-700">Done/ Finished</span>
           </div>
         </div>
       </CardContent>

@@ -8,7 +8,6 @@ import { Copy, Gift, AlertCircle, ArrowRight, Mail, CheckCircle2, XCircle } from
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { paths } from '../../apiDocs';
-import { signIn, signOut, useSession } from 'next-auth/react';
 
 type Job =
   paths['/jobs']['get']['responses']['200']['content']['application/json']['responseObject']['jobs'][number];
@@ -16,13 +15,12 @@ type ChangeOrder =
   paths['/jobs/changeorders/{jobId}']['get']['responses']['200']['content']['application/json']['responseObject']['changeOrders'][number];
 
 export default function Home() {
-  const { data: session } = useSession();
   const { me } = useMe();
   const { api } = useApi();
   const [copied, setCopied] = useState(false);
   const referralCode = me?.user?.referralCode;
 
-  const { data: jobsData } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ['jobs'],
     queryFn: async () => {
       const response = await api.GET('/jobs', {});
@@ -31,40 +29,7 @@ export default function Home() {
     },
   });
 
-  const changeOrdersQueries = useQueries({
-    queries:
-      jobsData?.map((job) => ({
-        queryKey: ['changeOrders', job.jobId],
-        queryFn: async () => {
-          try {
-            const response = await api.GET('/jobs/changeorders/{jobId}', {
-              params: {
-                path: {
-                  jobId: job.jobId,
-                },
-              },
-            });
-            const changeOrders = (response.data?.responseObject?.changeOrders || []) as ChangeOrder[];
-            return changeOrders.map((co) => ({ ...co, jobTitle: job.title, jobNumber: job.jobNumber }));
-          } catch (error: any) {
-            if (error?.statusCode === 404) {
-              return [];
-            }
-            throw error;
-          }
-        },
-        enabled: !!jobsData && jobsData.length > 0,
-      })) || [],
-  });
-
-  const pendingChangeOrders = useMemo(() => {
-    const allChangeOrders = changeOrdersQueries
-      .flatMap((query) => query.data || [])
-      .filter((co: ChangeOrder & { jobTitle: string; jobNumber: string | null }) => co.status !== 'paid');
-    return allChangeOrders;
-  }, [changeOrdersQueries]);
-
-  const isLoadingChangeOrders = changeOrdersQueries.some((query) => query.isLoading);
+  const activeJobs = data?.filter((job) => job.status === 'in-progress');
 
   const handleCopyReferralCode = async () => {
     if (referralCode) {
@@ -82,8 +47,19 @@ export default function Home() {
     }).format(amount);
   };
 
+  // const connect = () => {
+  //   window.location.href = 'http://localhost:8080/auth/google';
+  // };
+  // const sendTestEmail = async () => {
+  //   const response = await api.GET('/me/test-email', {});
+  //   console.log(response);
+  // };
+  console.log({ me });
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
+      <div>Welcome, {me?.user?.firstName}</div>
+      {/* <button onClick={sendTestEmail}>Send Test Email</button>;
+      <button onClick={connect}>Connect Gmail</button>; */}
       {referralCode && (
         <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10">
           <CardContent className="p-6">
@@ -115,112 +91,101 @@ export default function Home() {
           </CardContent>
         </Card>
       )}
-
-      {isLoadingChangeOrders ? (
+      {isLoading ? (
         <Card>
           <CardContent className="p-6">
-            <div className="text-slate-500">Loading change orders...</div>
+            <div className="text-slate-500">Loading jobs...</div>
           </CardContent>
         </Card>
-      ) : pendingChangeOrders.length > 0 ? (
-        <Card className="border-2 border-yellow-200 bg-yellow-50/50">
+      ) : activeJobs && activeJobs.length > 0 ? (
+        <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10">
           <CardHeader>
             <div className="flex items-center gap-2">
-              <AlertCircle className="h-5 w-5 text-yellow-600" />
-              <CardTitle className="text-yellow-900">
-                Pending Customer Notifications ({pendingChangeOrders.length})
-              </CardTitle>
+              <AlertCircle className="h-5 w-5" />
+              <CardTitle>Current Jobs: ({activeJobs.length})</CardTitle>
             </div>
           </CardHeader>
           <CardContent>
-            <p className="mb-4 text-sm text-yellow-800">
-              You have {pendingChangeOrders.length} change order{pendingChangeOrders.length !== 1 ? 's' : ''}{' '}
-              that need to be sent to customers.
-            </p>
             <div className="space-y-3">
-              {pendingChangeOrders
-                .slice(0, 5)
-                .map((changeOrder: ChangeOrder & { jobTitle: string; jobNumber: string | null }) => {
-                  const total = changeOrder.lineItems.reduce((sum, item) => sum + (item.price || 0), 0);
-                  return (
-                    <div
-                      key={changeOrder.changeOrderId}
-                      className="flex items-center justify-between rounded-md border border-yellow-200
-                        bg-white p-3"
-                    >
-                      <div className="flex-1">
-                        <div className="font-medium text-slate-900">
-                          {changeOrder.jobTitle}
-                          {changeOrder.jobNumber && (
-                            <span className="ml-2 text-sm text-slate-500">#{changeOrder.jobNumber}</span>
-                          )}
-                        </div>
-                        <div className="text-sm text-slate-600">
-                          Change Order #{changeOrder.changeOrderId.slice(-8)} • {formatCurrency(total)}
-                        </div>
+              {activeJobs.slice(0, 5).map((job: Job) => {
+                return (
+                  <div
+                    key={job.jobId}
+                    className="flex items-center justify-between rounded-md border border-primary/20 bg-white
+                      p-3"
+                  >
+                    <div className="flex-1">
+                      <div className="font-medium text-slate-900">
+                        {job.title}
+                        {job.jobNumber && (
+                          <span className="ml-2 text-sm text-slate-500">#{job.jobNumber}</span>
+                        )}
+                        {job.customer?.firstName && job.customer?.lastName && (
+                          <span className="ml-2 text-sm text-slate-500">
+                            {job.customer?.firstName} {job.customer?.lastName}
+                          </span>
+                        )}
                       </div>
-                      <Link href={`/jobs/${changeOrder.jobId}`}>
-                        <Button size="sm" variant="outline">
-                          View
-                          <ArrowRight className="ml-2 h-4 w-4" />
-                        </Button>
-                      </Link>
                     </div>
-                  );
-                })}
+                    <Link href={`/jobs/${job.jobId}`}>
+                      <Button size="sm" variant="outline">
+                        View
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                      </Button>
+                    </Link>
+                  </div>
+                );
+              })}
             </div>
-            {pendingChangeOrders.length > 5 && (
+            {activeJobs.length > 5 && (
               <p className="mt-4 text-sm text-yellow-800">
-                +{pendingChangeOrders.length - 5} more change order
-                {pendingChangeOrders.length - 5 !== 1 ? 's' : ''}
+                +{activeJobs.length - 5} more job
+                {activeJobs.length - 5 !== 1 ? 's' : ''}
               </p>
             )}
           </CardContent>
         </Card>
-      ) : null}
-
-      <Card className="border-2 border-slate-200">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Mail className="h-5 w-5 text-slate-700" />
-              <CardTitle>Google Email Integration</CardTitle>
-            </div>
-            {(me as any)?.user?.googleConnected ? (
-              <span className="flex items-center gap-1 text-sm text-emerald-600">
-                <CheckCircle2 className="h-4 w-4" />
-                Connected
-              </span>
-            ) : (
-              <span className="flex items-center gap-1 text-sm text-slate-500">
-                <XCircle className="h-4 w-4" />
-                Not Connected
-              </span>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent>
-          <p className="mb-4 text-sm text-slate-600">
-            Connect your Google account to send emails directly from your account. This allows you to notify
-            customers about change orders and other important updates.
-          </p>
-          <div>
-            {!session ? (
-              <button onClick={() => signIn('google')}>Sign in with Google</button>
-            ) : (
-              <div>
-                <p>Signed in as {session.user?.email}</p>
-                <button onClick={() => signOut()}>Sign out</button>
+      ) : (
+        <Card className="border-2 border-slate-200">
+          <CardContent className="p-6">
+            <div className="text-slate-500">No active jobs found.</div>
+          </CardContent>
+        </Card>
+      )}
+      {!me?.user?.linkedGoogleAccount && (
+        <Card className="border-2 border-slate-200">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Mail className="h-5 w-5 text-slate-700" />
+                <CardTitle>Google Email Integration</CardTitle>
               </div>
-            )}
-          </div>
-          {/* )} */}
-        </CardContent>
-      </Card>
-
-      <div>
-        Welcome, {me?.user?.firstName} with {me?.company?.companyName}
-      </div>
+              {(me as any)?.user?.googleConnected ? (
+                <span className="flex items-center gap-1 text-sm text-emerald-600">
+                  <CheckCircle2 className="h-4 w-4" />
+                  Connected
+                </span>
+              ) : (
+                <span className="flex items-center gap-1 text-sm text-slate-500">
+                  <XCircle className="h-4 w-4" />
+                  Not Connected
+                </span>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent>
+            <p className="mb-4 text-sm text-slate-600">
+              Connect your Google account to send emails directly from your account. This allows you to notify
+              customers about change orders and other important updates.
+            </p>
+            <div>
+              <Button onClick={() => (window.location.href = 'http://localhost:8080/auth/google')}>
+                Connect Google
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

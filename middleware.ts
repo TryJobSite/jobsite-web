@@ -1,4 +1,3 @@
-import { SESSION_COOKIE } from '@/utils/auth';
 import { RouteHelper, validAuthedOrUnauthedRegex, validUnauthedRegex } from '@/utils/routeHelper';
 import dayjs from 'dayjs';
 import { RequestCookies, ResponseCookies } from 'next/dist/compiled/@edge-runtime/cookies';

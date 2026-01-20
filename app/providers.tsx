@@ -12,12 +12,11 @@ import { CookiesProvider } from 'react-cookie';
 import { IntercomProvider } from 'react-use-intercom';
 import theme from './theme/theme';
 import { RouteHelper } from './utils/routeHelper';
-import { SessionProvider } from 'next-auth/react';
 dayjs.extend(advancedFormat); // extend functionality of dayjs globally
 
 export const queryClient = new QueryClient();
 
-export function Providers({ children, session }: { children: React.ReactNode; session: any | null }) {
+export function Providers({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { init } = useAnalytics();
   useEffect(() => {
@@ -48,22 +47,22 @@ export function Providers({ children, session }: { children: React.ReactNode; se
   }, []);
 
   return (
-    <SessionProvider session={session}>
-      {/* // <ReCaptchaProvider
+    <AppProgressProvider color="#DA2F16" height={'6px'}>
+      <CookiesProvider defaultSetOptions={{ path: '/' }}>
+        <QueryClientProvider client={queryClient}>
+          <IntercomProvider appId={'x6l0svm8'}>
+            <TokenRefresher>{children}</TokenRefresher>
+          </IntercomProvider>
+        </QueryClientProvider>
+      </CookiesProvider>
+    </AppProgressProvider>
+  );
+}
+
+{
+  /* // <ReCaptchaProvider
     //   reCaptchaKey={RECAPTCHA_KEY}
     //   useEnterprise
     //   className={!pathname.startsWith('/signup') ? 'hide-grecaptcha' : 'hide-grecaptcha'}
-    // > */}
-      <AppProgressProvider color="#DA2F16" height={'6px'}>
-        <CookiesProvider defaultSetOptions={{ path: '/' }}>
-          <QueryClientProvider client={queryClient}>
-            <IntercomProvider appId={'x6l0svm8'}>
-              <TokenRefresher>{children}</TokenRefresher>
-            </IntercomProvider>
-          </QueryClientProvider>
-        </CookiesProvider>
-      </AppProgressProvider>
-      {/* // </ReCaptchaProvider> */}
-    </SessionProvider>
-  );
+    // > */
 }

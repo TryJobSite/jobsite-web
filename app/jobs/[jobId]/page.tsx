@@ -8,15 +8,12 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/(components)/shadcn/ui/button';
-import { ArrowLeft, Plus } from 'lucide-react';
+import { ArrowLeft, Settings, FileText, Upload } from 'lucide-react';
 import Link from 'next/link';
-import { DescriptionCard } from './(components)/description-card';
-import { JobDetailsCard } from './(components)/job-details-card';
 import { ScopeOfWorkCard } from './(components)/scope-of-work-card';
 import { ChangeOrdersCard } from './(components)/change-orders-card';
 import { PaymentDrawsCard } from './(components)/payment-draws-card';
 import { DocumentsCard } from './(components)/documents-card';
-import { JobHeaderCard } from './(components)/job-header-card';
 import { TimelineCard } from './(components)/timeline-card';
 import { ChangeOrderModal } from './(components)/change-order-modal';
 import { PaymentDrawModal } from './(components)/payment-draw-modal';
@@ -29,6 +26,8 @@ import {
   parseBudgetFromInput,
   getStatusColor,
   formatStatus,
+  formatCurrency,
+  formatDate,
 } from './(components)/utils';
 import type { Job, ScopeOfWork, ChangeOrder, PaymentDraw } from './(components)/types';
 import {
@@ -40,6 +39,7 @@ import {
 } from '@/(components)/shadcn/ui/breadcrumb';
 import { PageHeader } from '@/(components)/layout/page-header';
 import { Breadcrumb } from '@/(components)/shadcn/ui/breadcrumb';
+import { Card, CardContent, CardHeader, CardTitle } from '@/(components)/shadcn/ui/card';
 
 const addressSchema = z.object({
   addressLine1: z.string().optional(),
@@ -60,11 +60,6 @@ const lineItemSchema = z.object({
   startDate: z.string().optional(),
   endDate: z.string().optional(),
   contractor: z.string().optional(),
-});
-
-const scopeOfWorkSchema = z.object({
-  lineItems: z.array(lineItemSchema).min(1, 'At least one line item is required'),
-  notes: z.string().optional(),
 });
 
 const changeOrderSchema = z.object({
@@ -113,7 +108,6 @@ const documentUploadSchema = z.object({
 
 type AddressFormData = z.infer<typeof addressSchema>;
 type DescriptionFormData = z.infer<typeof descriptionSchema>;
-type ScopeOfWorkFormData = z.infer<typeof scopeOfWorkSchema>;
 type ChangeOrderFormData = z.infer<typeof changeOrderSchema>;
 type JobDetailsFormData = z.infer<typeof jobDetailsSchema>;
 type PaymentDrawFormData = z.infer<typeof paymentDrawSchema>;
@@ -129,8 +123,6 @@ export default function JobDetailPage() {
 
   const [editingSection, setEditingSection] = useState<'address' | 'description' | 'details' | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isEditingSOW, setIsEditingSOW] = useState(false);
-  const [isCreatingSOW, setIsCreatingSOW] = useState(false);
   const [isCreateChangeOrderOpen, setIsCreateChangeOrderOpen] = useState(false);
   const [editingChangeOrderId, setEditingChangeOrderId] = useState<string | null>(null);
   const [isCreatePaymentDrawOpen, setIsCreatePaymentDrawOpen] = useState(false);
@@ -157,14 +149,6 @@ export default function JobDetailPage() {
 
   const jobDetailsForm = useForm<JobDetailsFormData>({
     resolver: zodResolver(jobDetailsSchema),
-  });
-
-  const sowForm = useForm<ScopeOfWorkFormData>({
-    resolver: zodResolver(scopeOfWorkSchema),
-    defaultValues: {
-      lineItems: [{ description: '', price: '' }],
-      notes: '',
-    },
   });
 
   const changeOrderForm = useForm<ChangeOrderFormData>({
@@ -427,37 +411,6 @@ export default function JobDetailPage() {
     }
   };
 
-  const handleCreateSOW = () => {
-    setIsCreatingSOW(true);
-    setIsEditingSOW(false);
-    sowForm.reset({
-      lineItems: [{ description: '', price: '', startDate: '', endDate: '', contractor: '' }],
-      notes: '',
-    });
-  };
-
-  const handleEditSOW = () => {
-    if (!sowData) return;
-    setIsEditingSOW(true);
-    setIsCreatingSOW(false);
-    sowForm.reset({
-      lineItems: sowData.lineItems.map((item) => ({
-        description: item.description,
-        price: item.price ? item.price.toFixed(2) : '',
-        startDate: item.startDate ? formatDateOnlyForInput(item.startDate) : '',
-        endDate: item.endDate ? formatDateOnlyForInput(item.endDate) : '',
-        contractor: item.contractor || '',
-      })),
-      notes: sowData.notes || '',
-    });
-  };
-
-  const handleCancelSOW = () => {
-    setIsCreatingSOW(false);
-    setIsEditingSOW(false);
-    sowForm.reset();
-  };
-
   const handleCreateChangeOrder = () => {
     setIsCreateChangeOrderOpen(true);
     changeOrderForm.reset({
@@ -642,58 +595,6 @@ export default function JobDetailPage() {
     } catch (error) {
       console.error('Save change order error:', error);
       alert('Failed to save change order. Please try again.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const onSubmitSOW = async (data: ScopeOfWorkFormData) => {
-    setIsSubmitting(true);
-    try {
-      const formatDateToISO = (dateStr: string | undefined) => {
-        if (!dateStr || dateStr === '') return null;
-        return new Date(dateStr + 'T00:00:00').toISOString();
-      };
-
-      const lineItems = data.lineItems.map((item) => ({
-        description: item.description,
-        price: item.price ? parseFloat(item.price) : null,
-        startDate: formatDateToISO(item.startDate),
-        endDate: formatDateToISO(item.endDate),
-        contractor: item.contractor || null,
-      }));
-
-      if (isCreatingSOW) {
-        await api.POST('/jobs/scopeofwork/{jobId}', {
-          params: {
-            path: {
-              jobId: job.jobId,
-            },
-          },
-          body: {
-            lineItems,
-            notes: data.notes || undefined,
-          } as any,
-        });
-      } else {
-        await api.PATCH('/jobs/scopeofwork/{jobId}', {
-          params: {
-            path: {
-              jobId: job.jobId,
-            },
-          },
-          body: {
-            lineItems,
-            notes: data.notes || null,
-          } as any,
-        });
-      }
-      queryClient.invalidateQueries({ queryKey: ['scopeOfWork', jobId] });
-      setIsCreatingSOW(false);
-      setIsEditingSOW(false);
-    } catch (error) {
-      console.error('Update scope of work error:', error);
-      alert('Failed to save scope of work. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -909,58 +810,101 @@ export default function JobDetailPage() {
             <BreadcrumbList>
               <BreadcrumbItem>
                 <BreadcrumbLink asChild>
-                  <Link href="/jobs" className="text-2xl">
-                    Jobs
-                  </Link>
+                  <Link href="/jobs">Jobs</Link>
                 </BreadcrumbLink>
               </BreadcrumbItem>
               <BreadcrumbSeparator />
               <BreadcrumbItem>
-                <BreadcrumbPage className="text-2xl">{job.title}</BreadcrumbPage>
+                <BreadcrumbPage>Job Details</BreadcrumbPage>
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
         }
-      />
-      <div className="space-y-6 p-6">
-        <div className="flex-1">
-          <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-bold tracking-tight">{job.title}</h1>
-            <span className={`rounded-full px-3 py-1 text-sm font-medium ${getStatusColor(job.status)}`}>
+        subtitle={
+          <>
+            <span className="text-lg">{job.title}</span>
+            <span className={`ml-2 rounded-full px-3 py-1 text-sm font-medium ${getStatusColor(job.status)}`}>
               {formatStatus(job.status)}
             </span>
+          </>
+        }
+        action={
+          <div className="flex items-center gap-2">
+            {' '}
+            <Button size="sm" variant="outline" onClick={handleCreateChangeOrder}>
+              <FileText className="mr-2 h-4 w-4" />
+              Create Change Order
+            </Button>
+            <Button size="sm" variant="outline" onClick={handleUploadDocument}>
+              <Upload className="mr-2 h-4 w-4" />
+              Upload Document
+            </Button>
+            <Button size="sm" variant="default" onClick={handleUpdateJobDetails}>
+              <Settings className="mr-2 h-4 w-4" />
+              Update Job Details
+            </Button>
           </div>
-          {job.jobNumber && <p className="text-slate-600">Job #{job.jobNumber}</p>}
-        </div>
-
-        <JobHeaderCard
-          job={job}
-          onCreateChangeOrder={handleCreateChangeOrder}
-          onUploadDocument={handleUploadDocument}
-          onUpdateJobDetails={handleUpdateJobDetails}
-        />
-
-        <div className="flex flex-wrap gap-6">
-          <DescriptionCard
-            job={job}
-            editingSection={editingSection}
-            isSubmitting={isSubmitting}
-            descriptionForm={descriptionForm}
-            onEdit={handleEditDescription}
-            onCancel={handleCancel}
-            onSubmit={onSubmitDescription}
-          />
-
-          <JobDetailsCard
-            job={job}
-            editingSection={editingSection}
-            isSubmitting={isSubmitting}
-            jobDetailsForm={jobDetailsForm}
-            onEdit={handleEditDetails}
-            onCancel={handleCancel}
-            onSubmit={onSubmitDetails}
-          />
-        </div>
+        }
+      />
+      <div className="space-y-6 p-6">
+        <Card
+          className={`min-w-[400px] flex-1 ${editingSection === 'description' ? 'ring-2 ring-primary' : ''}`}
+        >
+          <CardHeader>
+            <div className="flex gap-2 border-b border-slate-200 pb-2">
+              <div className="flex-1">
+                <div className="text-sm text-slate-500">Customer</div>
+                <div className="flex-1 text-lg font-medium">
+                  {job.customer?.firstName} {job.customer?.lastName}
+                </div>
+              </div>
+              <div className="flex-2">
+                <div className="text-sm text-slate-500">Address</div>
+                <div>
+                  {job.addressLine1} {job.addressLine2} {job.city} {job.state} {job.postalCode} {job.country}
+                </div>
+              </div>
+              <div className="flex flex-1 items-center justify-end">
+                <Button size="sm" variant="default" onClick={handleUpdateJobDetails}>
+                  <Settings className="mr-2 h-4 w-4" />
+                  Update Job Details
+                </Button>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="flex gap-2">
+              <div className="flex flex-1 gap-2">
+                <div className="flex-1">
+                  <div className="mb-4 border-l border-slate-200 pl-2">
+                    <div className="text-sm text-slate-500">Budget</div>
+                    <div>{formatCurrency(job.budget)}</div>
+                  </div>
+                  <div className="border-l border-slate-200 pl-2">
+                    <div className="text-sm text-slate-500">Start Date</div>
+                    <div>{formatDate(job.actualStartDate)}</div>
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <div className="mb-4 border-l border-slate-200 pl-2">
+                    <div className="text-sm text-slate-500">Est. Start Date</div>
+                    <div>{formatDate(job.estimatedStartDate)}</div>
+                  </div>
+                  <div className="border-l border-slate-200 pl-2">
+                    <div className="text-sm text-slate-500">Est. End Date</div>
+                    <div>{formatDate(job.estimatedEndDate)}</div>
+                  </div>
+                </div>
+              </div>
+              <div className="flex-1">
+                <div className="mb-4 h-full border-l border-slate-200 pl-2">
+                  <div className="text-sm text-slate-500">Description</div>
+                  <div>{job.description}</div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         <TimelineCard
           sowData={sowData}
@@ -969,18 +913,7 @@ export default function JobDetailPage() {
           isLoading={isLoadingSOW || isLoadingChangeOrders}
         />
 
-        <ScopeOfWorkCard
-          isLoading={isLoadingSOW}
-          sowData={sowData}
-          isCreating={isCreatingSOW}
-          isEditing={isEditingSOW}
-          isSubmitting={isSubmitting}
-          sowForm={sowForm}
-          onCreate={handleCreateSOW}
-          onEdit={handleEditSOW}
-          onCancel={handleCancelSOW}
-          onSubmit={onSubmitSOW}
-        />
+        <ScopeOfWorkCard isLoading={isLoadingSOW} sowData={sowData} />
 
         <ChangeOrdersCard
           isLoading={isLoadingChangeOrders}
