@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Home, Briefcase, Settings, LogOut, Users } from 'lucide-react';
+import { Home, Briefcase, Settings, LogOut, Users, FileText } from 'lucide-react';
 import { Button } from '@/(components)/shadcn/ui/button';
 import { useMe } from '@/(hooks)/useMe';
 import { cn } from '@/utils/cn';
@@ -17,6 +17,11 @@ const navigationItems = [
     name: 'Jobs',
     href: '/jobs',
     icon: Briefcase,
+  },
+  {
+    name: 'Bids',
+    href: '/bids',
+    icon: FileText,
   },
   {
     name: 'Customers',

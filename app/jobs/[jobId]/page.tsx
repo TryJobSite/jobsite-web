@@ -69,7 +69,7 @@ const changeOrderSchema = z.object({
 });
 
 const jobDetailsSchema = z.object({
-  budget: z.string().optional(),
+  price: z.string().optional(),
   estimatedStartDate: z.string().optional(),
   estimatedEndDate: z.string().optional(),
   actualStartDate: z.string().optional(),
@@ -85,7 +85,7 @@ const jobDetailsUpdateSchema = z.object({
   postalCode: z.string(),
   country: z.string(),
   status: z.enum(['planned', 'in-progress', 'completed', 'cancelled', 'on-hold']),
-  budget: z.string(),
+  price: z.string(),
 });
 
 const paymentDrawSchema = z.object({
@@ -198,7 +198,7 @@ export default function JobDetailPage() {
     postalCode: string;
     country: string;
     status: 'planned' | 'in-progress' | 'completed' | 'cancelled' | 'on-hold';
-    budget: string;
+    price: string;
   }>({
     resolver: zodResolver(jobDetailsUpdateSchema),
     defaultValues: {
@@ -210,7 +210,7 @@ export default function JobDetailPage() {
       postalCode: '',
       country: '',
       status: 'planned',
-      budget: '',
+      price: '',
     },
   });
 
@@ -345,7 +345,7 @@ export default function JobDetailPage() {
   const handleEditDetails = () => {
     setEditingSection('details');
     jobDetailsForm.reset({
-      budget: formatBudgetForInput(job.budget),
+      price: formatCurrency(job.price),
       estimatedStartDate: formatDateOnlyForInput(job.estimatedStartDate),
       estimatedEndDate: formatDateOnlyForInput(job.estimatedEndDate),
       actualStartDate: formatDateOnlyForInput(job.actualStartDate),
@@ -704,7 +704,7 @@ export default function JobDetailPage() {
       postalCode: job.postalCode || '',
       country: job.country || '',
       status: job.status,
-      budget: formatBudgetForInput(job.budget),
+      price: formatCurrency(job.price),
     });
   };
 
@@ -722,11 +722,11 @@ export default function JobDetailPage() {
     postalCode: string;
     country: string;
     status: 'planned' | 'in-progress' | 'completed' | 'cancelled' | 'on-hold';
-    budget: string;
+    price: string;
   }) => {
     setIsSubmitting(true);
     try {
-      const budgetValue = data.budget ? parseBudgetFromInput(data.budget) : null;
+      const priceValue = data.price ? parseFloat(data.price) : null;
       await api.PATCH('/jobs/{jobId}', {
         params: {
           path: {
@@ -742,7 +742,7 @@ export default function JobDetailPage() {
           postalCode: data.postalCode || null,
           country: data.country || null,
           status: data.status,
-          budget: budgetValue,
+          price: priceValue,
         } as any,
       });
       queryClient.invalidateQueries({ queryKey: ['jobs'] });
@@ -770,7 +770,7 @@ export default function JobDetailPage() {
           },
         },
         body: {
-          budget: data.budget ? parseBudgetFromInput(data.budget) : null,
+          price: data.price ? parseFloat(data.price) : null,
           estimatedStartDate: formatDateToISO(data.estimatedStartDate) as string | null | undefined,
           estimatedEndDate: formatDateToISO(data.estimatedEndDate) as string | null | undefined,
           actualStartDate: formatDateToISO(data.actualStartDate) as string | null | undefined,
@@ -839,7 +839,7 @@ export default function JobDetailPage() {
               <Upload className="mr-2 h-4 w-4" />
               Upload Document
             </Button>
-            <Button size="sm" variant="default" onClick={handleUpdateJobDetails}>
+            <Button size="sm" variant="outline" onClick={handleUpdateJobDetails}>
               <Settings className="mr-2 h-4 w-4" />
               Update Job Details
             </Button>
@@ -877,8 +877,8 @@ export default function JobDetailPage() {
               <div className="flex flex-1 gap-2">
                 <div className="flex-1">
                   <div className="mb-4 border-l border-slate-200 pl-2">
-                    <div className="text-sm text-slate-500">Budget</div>
-                    <div>{formatCurrency(job.budget)}</div>
+                    <div className="text-sm text-slate-500">Price</div>
+                    <div>{formatCurrency(job.price)}</div>
                   </div>
                   <div className="border-l border-slate-200 pl-2">
                     <div className="text-sm text-slate-500">Start Date</div>

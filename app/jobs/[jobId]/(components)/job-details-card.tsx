@@ -135,7 +135,7 @@ export function JobDetailsCard({
           <>
             <div className="min-w-[calc(33.333%-1rem)] flex-1">
               <div className="text-sm text-slate-500">Budget</div>
-              <div className="text-lg font-medium">{formatCurrency(job.budget)}</div>
+              <div className="text-lg font-medium">{formatCurrency(job.price)}</div>
             </div>
             <div className="min-w-[calc(33.333%-1rem)] flex-1">
               <div className="text-sm text-slate-500">Estimated Start Date</div>

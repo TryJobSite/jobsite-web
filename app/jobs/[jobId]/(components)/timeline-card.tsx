@@ -45,7 +45,9 @@ export function TimelineCard({ sowData, isLoading }: TimelineCardProps) {
           <CardTitle>Timeline</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="py-12 text-center text-slate-500">No timeline data available.</div>
+          <div className="py-12 text-center text-slate-500">
+            No timeline data available. Add scope of work line items to see the timeline.
+          </div>
         </CardContent>
       </Card>
     );
@@ -112,7 +114,9 @@ export function TimelineCard({ sowData, isLoading }: TimelineCardProps) {
           <CardTitle>Timeline</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="py-12 text-center text-slate-500">No timeline data available.</div>
+          <div className="py-12 text-center text-slate-500">
+            No timeline data available. Add start/end dates to see the timeline.
+          </div>
         </CardContent>
       </Card>
     );
