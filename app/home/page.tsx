@@ -10,7 +10,7 @@ import { useState, useMemo } from 'react';
 import { Job } from '@/jobs/[jobId]/(components)/types';
 
 export default function Home() {
-  const { me } = useMe();
+  const { me, refresh } = useMe();
   const { api } = useApi();
   const [copied, setCopied] = useState(false);
   const referralCode = me?.user?.referralCode;
@@ -99,12 +99,27 @@ export default function Home() {
     window.location.href = `/jobs/${job.jobId}`;
   };
 
+  const handleConnectGoogle = () => {
+    const width = 500;
+    const height = 600;
+    const left = window.screenX + (window.outerWidth - width) / 2;
+    const top = window.screenY + (window.outerHeight - height) / 2;
+    const popup = window.open(
+      'http://localhost:8080/auth/google',
+      'google-oauth',
+      `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`
+    );
+    if (!popup) return;
+    const interval = setInterval(() => {
+      if (popup.closed) {
+        clearInterval(interval);
+        refresh();
+      }
+    }, 500);
+  };
+
   // const connect = () => {
   //   window.location.href = 'http://localhost:8080/auth/google';
-  // };
-  // const sendTestEmail = async () => {
-  //   const response = await api.GET('/me/test-email', {});
-  //   console.log(response);
   // };
   return (
     <div className="space-y-6 p-6">
@@ -287,6 +302,14 @@ export default function Home() {
           </CardContent>
         </Card>
       )}
+      {/* <Card className="border-2 border-slate-200">
+        <CardContent className="p-6">
+          <Button onClick={sendTestEmail} variant="outline">
+            Send Test Email
+          </Button>
+        </CardContent>
+      </Card> */}
+
       {!me?.user?.linkedGoogleAccount && (
         <Card className="border-2 border-slate-200">
           <CardHeader>
@@ -314,9 +337,7 @@ export default function Home() {
               customers about change orders and other important updates.
             </p>
             <div>
-              <Button onClick={() => (window.location.href = 'http://localhost:8080/auth/google')}>
-                Connect Google
-              </Button>
+              <Button onClick={handleConnectGoogle}>Connect Google</Button>
             </div>
           </CardContent>
         </Card>
