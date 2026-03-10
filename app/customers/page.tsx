@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -72,7 +72,7 @@ function formatContactMethod(method: string | null | undefined): string {
   return method.charAt(0).toUpperCase() + method.slice(1);
 }
 
-export default function CustomersPage() {
+function CustomersPageInner() {
   const { api } = useApi();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -680,5 +680,13 @@ export default function CustomersPage() {
         </Dialog>
       </div>
     </>
+  );
+}
+
+export default function CustomersPage() {
+  return (
+    <Suspense>
+      <CustomersPageInner />
+    </Suspense>
   );
 }

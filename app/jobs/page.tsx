@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -128,7 +128,7 @@ function parsePriceFromInput(value: string): string {
   return cleaned;
 }
 
-export default function JobsPage() {
+function JobsPageInner() {
   const { api } = useApi();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -872,5 +872,13 @@ export default function JobsPage() {
         </Dialog>
       </div>
     </>
+  );
+}
+
+export default function JobsPage() {
+  return (
+    <Suspense>
+      <JobsPageInner />
+    </Suspense>
   );
 }
