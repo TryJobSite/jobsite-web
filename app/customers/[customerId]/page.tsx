@@ -55,7 +55,7 @@ type Job = {
   estimatedEndDate: string | null;
   actualStartDate: string | null;
   actualEndDate: string | null;
-  budget: number | null;
+  price: number | null;
   addressLine1: string | null;
   addressLine2: string | null;
   city: string | null;
@@ -652,10 +652,10 @@ export default function CustomerDetailPage() {
                       )}
 
                       <div className="space-y-2 text-sm">
-                        {job.budget !== null && (
+                        {job.price !== null && (
                           <div className="flex justify-between">
-                            <span className="text-slate-500">Budget:</span>
-                            <span className="font-medium">{formatCurrency(job.budget)}</span>
+                            <span className="text-slate-500">Price:</span>
+                            <span className="font-medium">{formatCurrency(job.price)}</span>
                           </div>
                         )}
 

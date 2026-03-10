@@ -65,7 +65,7 @@ type Job = {
   estimatedEndDate: string | null;
   actualStartDate: string | null;
   actualEndDate: string | null;
-  budget: number | null;
+  price: number | null;
   addressLine1: string | null;
   addressLine2: string | null;
   city: string | null;
@@ -117,7 +117,7 @@ function formatStatus(status: JobStatus): string {
     .join(' ');
 }
 
-function parseBudgetFromInput(value: string): string {
+function parsePriceFromInput(value: string): string {
   // Remove all non-digit characters except decimal point
   const cleaned = value.replace(/[^\d.]/g, '');
   // Remove multiple decimal points, keep only the first one
@@ -388,10 +388,10 @@ export default function JobsPage() {
                   )}
 
                   <div className="space-y-2 text-sm">
-                    {job.budget !== null && (
+                    {job.price !== null && (
                       <div className="flex justify-between">
-                        <span className="text-slate-500">Budget:</span>
-                        <span className="font-medium">{formatCurrency(job.budget)}</span>
+                        <span className="text-slate-500">Price:</span>
+                        <span className="font-medium">{formatCurrency(job.price)}</span>
                       </div>
                     )}
 
@@ -552,7 +552,7 @@ export default function JobsPage() {
                       className="pl-7"
                       {...createForm.register('price', {
                         onChange: (e) => {
-                          const parsed = parseBudgetFromInput(e.target.value);
+                          const parsed = parsePriceFromInput(e.target.value);
                           e.target.value = parsed;
                         },
                       })}
@@ -737,7 +737,7 @@ export default function JobsPage() {
                       className="pl-7"
                       {...editForm.register('price', {
                         onChange: (e) => {
-                          const parsed = parseBudgetFromInput(e.target.value);
+                          const parsed = parsePriceFromInput(e.target.value);
                           e.target.value = parsed;
                         },
                       })}

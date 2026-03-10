@@ -117,7 +117,7 @@ function formatStatus(status: BidStatus): string {
     .join(' ');
 }
 
-function parseBudgetFromInput(value: string): string {
+function parsePriceFromInput(value: string): string {
   const cleaned = value.replace(/[^\d.]/g, '');
   const parts = cleaned.split('.');
   if (parts.length > 2) {
@@ -743,7 +743,7 @@ export default function BidsPage() {
                       className="pl-7"
                       {...createForm.register('price', {
                         onChange: (e) => {
-                          const parsed = parseBudgetFromInput(e.target.value);
+                          const parsed = parsePriceFromInput(e.target.value);
                           e.target.value = parsed;
                         },
                       })}

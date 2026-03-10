@@ -6,10 +6,10 @@ import { Input } from '@/(components)/shadcn/ui/input';
 import { Label } from '@/(components)/shadcn/ui/label';
 import { UseFormReturn } from 'react-hook-form';
 import { Job } from './types';
-import { formatCurrency, formatDate, parseBudgetFromInput } from './utils';
+import { formatCurrency, formatDate, parsePriceFromInput } from './utils';
 
 type JobDetailsFormData = {
-  budget?: string;
+  price?: string;
   estimatedStartDate?: string;
   estimatedEndDate?: string;
   actualStartDate?: string;
@@ -64,18 +64,18 @@ export function JobDetailsCard({
         {editingSection === 'details' ? (
           <form onSubmit={jobDetailsForm.handleSubmit(onSubmit)} className="flex w-full flex-wrap gap-6">
             <div className="min-w-[calc(33.333%-1rem)] flex-1">
-              <Label htmlFor="budget" className="text-sm text-slate-500">
-                Budget
+              <Label htmlFor="price" className="text-sm text-slate-500">
+                Price
               </Label>
               <div className="relative mt-1">
                 <span className="absolute top-1/2 left-3 -translate-y-1/2 text-slate-500">$</span>
                 <Input
-                  id="budget"
-                  {...jobDetailsForm.register('budget', {
+                  id="price"
+                  {...jobDetailsForm.register('price', {
                     onChange: (e) => {
-                      const value = parseBudgetFromInput(e.target.value);
+                      const value = parsePriceFromInput(e.target.value);
                       const stringValue = value !== null ? value.toFixed(2) : '';
-                      jobDetailsForm.setValue('budget', stringValue, { shouldDirty: true });
+                      jobDetailsForm.setValue('price', stringValue, { shouldDirty: true });
                       e.target.value = stringValue;
                     },
                   })}
@@ -134,7 +134,7 @@ export function JobDetailsCard({
         ) : (
           <>
             <div className="min-w-[calc(33.333%-1rem)] flex-1">
-              <div className="text-sm text-slate-500">Budget</div>
+              <div className="text-sm text-slate-500">Price</div>
               <div className="text-lg font-medium">{formatCurrency(job.price)}</div>
             </div>
             <div className="min-w-[calc(33.333%-1rem)] flex-1">

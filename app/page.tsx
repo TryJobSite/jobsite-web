@@ -25,7 +25,7 @@ const coreFeatures = [
   {
     title: 'Stay on Top of Change Orders',
     description:
-      'Track scope changes, approvals, and budget impact in real-time so nothing slips through the cracks.',
+      'Track scope changes, approvals, and price impact in real-time so nothing slips through the cracks.',
   },
 ];
 

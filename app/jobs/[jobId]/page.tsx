@@ -22,8 +22,6 @@ import { DocumentViewerModal } from './(components)/document-viewer-modal';
 import { JobDetailsUpdateModal } from './(components)/job-details-update-modal';
 import {
   formatDateOnlyForInput,
-  formatBudgetForInput,
-  parseBudgetFromInput,
   getStatusColor,
   formatStatus,
   formatCurrency,
@@ -39,20 +37,7 @@ import {
 } from '@/(components)/shadcn/ui/breadcrumb';
 import { PageHeader } from '@/(components)/layout/page-header';
 import { Breadcrumb } from '@/(components)/shadcn/ui/breadcrumb';
-import { Card, CardContent, CardHeader, CardTitle } from '@/(components)/shadcn/ui/card';
-
-const addressSchema = z.object({
-  addressLine1: z.string().optional(),
-  addressLine2: z.string().optional(),
-  city: z.string().optional(),
-  state: z.string().optional(),
-  postalCode: z.string().optional(),
-  country: z.string().optional(),
-});
-
-const descriptionSchema = z.object({
-  description: z.string().optional(),
-});
+import { Card, CardContent, CardHeader } from '@/(components)/shadcn/ui/card';
 
 const lineItemSchema = z.object({
   description: z.string().min(1, 'Description is required'),

@@ -112,9 +112,9 @@ function formatDateOnlyForInput(dateStr: string | null | undefined): string {
   }
 }
 
-function formatBudgetForInput(budget: number | null | undefined): string {
-  if (budget === null || budget === undefined) return '';
-  return budget.toFixed(2);
+function formatPriceForInput(price: number | null | undefined): string {
+  if (price === null || price === undefined) return '';
+  return price.toFixed(2);
 }
 
 const bidDetailsUpdateSchema = z.object({
@@ -186,7 +186,7 @@ export default function BidDetailPage() {
         postalCode: bid.postalCode || '',
         country: bid.country || '',
         status: bid.status,
-        price: formatBudgetForInput(bid.price),
+        price: formatPriceForInput(bid.price),
         estimatedStartDate: formatDateOnlyForInput(bid.estimatedStartDate),
         estimatedEndDate: formatDateOnlyForInput(bid.estimatedEndDate),
         notes: bid.notes || '',

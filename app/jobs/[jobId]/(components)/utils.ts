@@ -39,12 +39,12 @@ export function formatDateOnlyForInput(dateStr: string | null | undefined): stri
   }
 }
 
-export function formatBudgetForInput(budget: number | null | undefined): string {
-  if (budget === null || budget === undefined) return '';
-  return budget.toFixed(2);
+export function formatPriceForInput(price: number | null | undefined): string {
+  if (price === null || price === undefined) return '';
+  return price.toFixed(2);
 }
 
-export function parseBudgetFromInput(value: string): number | null {
+export function parsePriceFromInput(value: string): number | null {
   const cleaned = value.replace(/[^0-9.-]/g, '');
   if (cleaned === '' || cleaned === '-') {
     return null;

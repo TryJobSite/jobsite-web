@@ -45,7 +45,7 @@ export function JobDetailsUpdateModal({
       <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Update Job Details</DialogTitle>
-          <DialogDescription>Update the job description, address, status, and budget.</DialogDescription>
+          <DialogDescription>Update the job description, address, status, and price.</DialogDescription>
         </DialogHeader>
         <form onSubmit={jobDetailsForm.handleSubmit(onSubmit)} className="space-y-6">
           <div>
@@ -169,13 +169,13 @@ export function JobDetailsUpdateModal({
               </select>
             </div>
             <div>
-              <Label htmlFor="job-budget" className="text-sm font-medium">
-                Budget
+              <Label htmlFor="job-price" className="text-sm font-medium">
+                Price
               </Label>
               <div className="relative mt-1">
                 <span className="absolute top-1/2 left-3 -translate-y-1/2 text-slate-500">$</span>
                 <Input
-                  id="job-budget"
+                  id="job-price"
                   {...jobDetailsForm.register('price')}
                   className="pl-7"
                   placeholder="0.00"

@@ -33,7 +33,7 @@ export default function Home() {
     const activeCount = data.filter((job) => job.status === 'in-progress').length;
 
     const totalValue = data.reduce((sum, job) => {
-      const value = (job as any).price ?? (job as any).budget ?? 0;
+      const value = (job as any).price ?? 0;
       return sum + (value || 0);
     }, 0);
 
@@ -232,7 +232,7 @@ export default function Home() {
                     <div className="space-y-2 text-sm">
                       {job.price !== null && (
                         <div className="flex justify-between">
-                          <span className="text-slate-500">Budget:</span>
+                          <span className="text-slate-500">Price:</span>
                           <span className="font-medium">{formatCurrency(job.price)}</span>
                         </div>
                       )}
