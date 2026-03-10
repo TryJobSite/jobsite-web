@@ -21,6 +21,7 @@ const lineItemSchema = z.object({
   startDate: z.string().optional(),
   endDate: z.string().optional(),
   contractor: z.string().optional(),
+  isAllocation: z.boolean().optional(),
 });
 
 const scopeOfWorkSchema = z.object({
@@ -52,6 +53,7 @@ export function ScopeOfWorkCard({ isLoading, sowData }: ScopeOfWorkCardProps) {
     startDate?: string;
     endDate?: string;
     contractor?: string;
+    isAllocation?: boolean;
   } | null>(null);
 
   const sowForm = useForm<ScopeOfWorkFormData>({
@@ -64,8 +66,9 @@ export function ScopeOfWorkCard({ isLoading, sowData }: ScopeOfWorkCardProps) {
             startDate: item.startDate ? formatDateOnlyForInput(item.startDate) : '',
             endDate: item.endDate ? formatDateOnlyForInput(item.endDate) : '',
             contractor: item.contractor || '',
+            isAllocation: (item as any).isAllocation ?? false,
           }))
-        : [{ description: '', price: '', startDate: '', endDate: '', contractor: '' }],
+        : [{ description: '', price: '', startDate: '', endDate: '', contractor: '', isAllocation: false }],
       notes: sowData?.notes || '',
     },
   });
@@ -74,7 +77,9 @@ export function ScopeOfWorkCard({ isLoading, sowData }: ScopeOfWorkCardProps) {
     setIsCreating(true);
     setIsEditing(false);
     sowForm.reset({
-      lineItems: [{ description: '', price: '', startDate: '', endDate: '', contractor: '' }],
+      lineItems: [
+        { description: '', price: '', startDate: '', endDate: '', contractor: '', isAllocation: false },
+      ],
       notes: '',
     });
   };
@@ -91,6 +96,7 @@ export function ScopeOfWorkCard({ isLoading, sowData }: ScopeOfWorkCardProps) {
         startDate: item.startDate ? formatDateOnlyForInput(item.startDate) : '',
         endDate: item.endDate ? formatDateOnlyForInput(item.endDate) : '',
         contractor: item.contractor || '',
+        isAllocation: (item as any).isAllocation ?? false,
       })),
       notes: sowData.notes || '',
     });
@@ -116,6 +122,7 @@ export function ScopeOfWorkCard({ isLoading, sowData }: ScopeOfWorkCardProps) {
         startDate: formatDateToISO(item.startDate),
         endDate: formatDateToISO(item.endDate),
         contractor: item.contractor || null,
+        isAllocation: item.isAllocation ?? false,
       }));
 
       if (isCreating) {
@@ -162,6 +169,7 @@ export function ScopeOfWorkCard({ isLoading, sowData }: ScopeOfWorkCardProps) {
       startDate: item.startDate ? formatDateOnlyForInput(item.startDate) : '',
       endDate: item.endDate ? formatDateOnlyForInput(item.endDate) : '',
       contractor: item.contractor || '',
+      isAllocation: (item as any).isAllocation ?? false,
     });
   };
 
@@ -183,6 +191,7 @@ export function ScopeOfWorkCard({ isLoading, sowData }: ScopeOfWorkCardProps) {
             startDate: item.startDate ? formatDateOnlyForInput(item.startDate) : '',
             endDate: item.endDate ? formatDateOnlyForInput(item.endDate) : '',
             contractor: item.contractor || '',
+            isAllocation: (item as any).isAllocation ?? false,
           }));
     console.log({
       currentLineItems,
@@ -196,6 +205,7 @@ export function ScopeOfWorkCard({ isLoading, sowData }: ScopeOfWorkCardProps) {
       startDate: editingRowData.startDate || '',
       endDate: editingRowData.endDate || '',
       contractor: editingRowData.contractor || '',
+      isAllocation: editingRowData.isAllocation ?? false,
     };
 
     sowForm.setValue('lineItems', updatedLineItems, { shouldDirty: true });
@@ -223,6 +233,7 @@ export function ScopeOfWorkCard({ isLoading, sowData }: ScopeOfWorkCardProps) {
             startDate: item.startDate ? formatDateOnlyForInput(item.startDate) : '',
             endDate: item.endDate ? formatDateOnlyForInput(item.endDate) : '',
             contractor: item.contractor || '',
+            isAllocation: (item as any).isAllocation ?? false,
           }));
 
     const updatedLineItems = currentLineItems.filter((_, i) => i !== index);
@@ -251,6 +262,7 @@ export function ScopeOfWorkCard({ isLoading, sowData }: ScopeOfWorkCardProps) {
           startDate: item.startDate ? formatDateOnlyForInput(item.startDate) : '',
           endDate: item.endDate ? formatDateOnlyForInput(item.endDate) : '',
           contractor: item.contractor || '',
+          isAllocation: (item as any).isAllocation ?? false,
         })),
         notes: sowData.notes || '',
       });
@@ -307,6 +319,22 @@ export function ScopeOfWorkCard({ isLoading, sowData }: ScopeOfWorkCardProps) {
                         {...sowForm.register(`lineItems.${index}.description`)}
                         placeholder="Item description"
                       />
+                    </div>
+                    <div className="flex shrink-0 flex-col items-center gap-1 pt-1">
+                      <Label
+                        htmlFor={`lineItems.${index}.isAllocation`}
+                        className="text-sm text-slate-500"
+                      >
+                        Allocation
+                      </Label>
+                      <div className="flex h-10 items-center">
+                        <input
+                          id={`lineItems.${index}.isAllocation`}
+                          type="checkbox"
+                          {...sowForm.register(`lineItems.${index}.isAllocation`)}
+                          className="h-4 w-4 rounded border-slate-300"
+                        />
+                      </div>
                     </div>
                     <div className="w-32 space-y-2">
                       <Label htmlFor={`lineItems.${index}.price`} className="text-sm text-slate-500">
@@ -389,7 +417,14 @@ export function ScopeOfWorkCard({ isLoading, sowData }: ScopeOfWorkCardProps) {
                   'lineItems',
                   [
                     ...currentItems,
-                    { description: '', price: '', startDate: '', endDate: '', contractor: '' },
+                    {
+                      description: '',
+                      price: '',
+                      startDate: '',
+                      endDate: '',
+                      contractor: '',
+                      isAllocation: false,
+                    },
                   ],
                   {
                     shouldDirty: true,
@@ -483,6 +518,9 @@ export function ScopeOfWorkCard({ isLoading, sowData }: ScopeOfWorkCardProps) {
                                     currency: 'USD',
                                   }).format(item.price)
                                 : 'N/A'}
+                              {(item as any).isAllocation && (
+                                <span className="ml-1 text-xs text-slate-500">(A)</span>
+                              )}
                             </span>
                           )}
                         </td>
@@ -536,6 +574,22 @@ export function ScopeOfWorkCard({ isLoading, sowData }: ScopeOfWorkCardProps) {
                             <span className="text-sm text-slate-900">{item.contractor || 'N/A'}</span>
                           )}
                         </td>
+                        {/* <td className="border-collapse border border-slate-200 px-4 py-3 text-center">
+                          {isEditing ? (
+                            <input
+                              type="checkbox"
+                              checked={editingRowData?.isAllocation ?? false}
+                              onChange={(e) =>
+                                setEditingRowData((prev) =>
+                                  prev ? { ...prev, isAllocation: e.target.checked } : null
+                                )
+                              }
+                              className="h-4 w-4 rounded border-slate-300"
+                            />
+                          ) : (item as any).isAllocation ? (
+                            <span className="text-xs font-medium text-slate-500">(A)</span>
+                          ) : null}
+                        </td> */}
                         <td className="border-collapse border border-slate-200 px-4 py-3">
                           <div className="flex items-center gap-2">
                             {isEditing ? (
@@ -603,6 +657,12 @@ export function ScopeOfWorkCard({ isLoading, sowData }: ScopeOfWorkCardProps) {
                 </tbody>
               </table>
             </div>
+            {sowData.lineItems.some((item) => (item as any).isAllocation) && (
+              <div className="px-4 pb-2 text-xs text-slate-500">
+                <span className="font-medium">(A)</span> — This line item is an allocation. Cost can be less
+                or more than the allocation based on materials pricing.
+              </div>
+            )}
             {sowData.notes && (
               <div className="px-4 py-3">
                 <h4 className="mb-2 text-sm font-medium">Notes</h4>

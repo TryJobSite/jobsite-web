@@ -15,9 +15,10 @@ import { Plus, Trash2 } from 'lucide-react';
 import { UseFormReturn } from 'react-hook-form';
 
 type ChangeOrderFormData = {
-  lineItems: Array<{ description: string; price?: string }>;
+  lineItems: Array<{ description: string; price?: string; isAllocation?: boolean }>;
   notes?: string;
   status: 'created' | 'paymentRequested' | 'paid';
+  title: string;
 };
 
 type ChangeOrderModalProps = {
@@ -26,9 +27,10 @@ type ChangeOrderModalProps = {
   isEditing: boolean;
   isSubmitting: boolean;
   changeOrderForm: UseFormReturn<{
-    lineItems: Array<{ description: string; price?: string }>;
+    lineItems: Array<{ description: string; price?: string; isAllocation?: boolean }>;
     notes?: string;
     status: 'created' | 'paymentRequested' | 'paid';
+    title: string;
   }>;
   onSubmit: (data: ChangeOrderFormData) => Promise<void>;
 };
@@ -55,8 +57,14 @@ export function ChangeOrderModal({
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={changeOrderForm.handleSubmit(onSubmit)} className="space-y-6">
-          <div className="-mt-4 mb-2 flex items-center justify-end gap-4">
-            <div className="flex items-center space-x-2">
+          <div className="mt-4 mb-2 flex items-end gap-4">
+            <div className="flex flex-1 flex-col gap-1">
+              <Label htmlFor="co-title" className="text-sm font-medium">
+                Title
+              </Label>
+              <Input id="co-title" {...changeOrderForm.register('title')} placeholder="Change order title" />
+            </div>
+            <div className="flex shrink-0 flex-col gap-1">
               <Label htmlFor="co-status" className="text-sm font-medium">
                 Status
               </Label>
@@ -102,6 +110,22 @@ export function ChangeOrderModal({
                         placeholder="0.00"
                         type="text"
                         inputMode="decimal"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex shrink-0 flex-col items-center gap-1 pt-1">
+                    <Label
+                      htmlFor={`co-lineItems.${index}.isAllocation`}
+                      className="text-sm text-slate-500"
+                    >
+                      Allocation
+                    </Label>
+                    <div className="flex h-10 items-center">
+                      <input
+                        id={`co-lineItems.${index}.isAllocation`}
+                        type="checkbox"
+                        {...changeOrderForm.register(`lineItems.${index}.isAllocation`)}
+                        className="h-4 w-4 rounded border-slate-300"
                       />
                     </div>
                   </div>

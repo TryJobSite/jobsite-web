@@ -60,9 +60,11 @@ const lineItemSchema = z.object({
   startDate: z.string().optional(),
   endDate: z.string().optional(),
   contractor: z.string().optional(),
+  isAllocation: z.boolean().optional(),
 });
 
 const changeOrderSchema = z.object({
+  title: z.string().min(1, 'Title is required'),
   lineItems: z.array(lineItemSchema).min(1, 'At least one line item is required'),
   notes: z.string().optional(),
   status: z.enum(['created', 'paymentRequested', 'paid']),
@@ -106,8 +108,6 @@ const documentUploadSchema = z.object({
   notes: z.string().optional().nullable(),
 });
 
-type AddressFormData = z.infer<typeof addressSchema>;
-type DescriptionFormData = z.infer<typeof descriptionSchema>;
 type ChangeOrderFormData = z.infer<typeof changeOrderSchema>;
 type JobDetailsFormData = z.infer<typeof jobDetailsSchema>;
 type PaymentDrawFormData = z.infer<typeof paymentDrawSchema>;
@@ -139,24 +139,13 @@ export default function JobDetailPage() {
   } | null>(null);
   const [isJobDetailsUpdateOpen, setIsJobDetailsUpdateOpen] = useState(false);
 
-  const addressForm = useForm<AddressFormData>({
-    resolver: zodResolver(addressSchema),
-  });
-
-  const descriptionForm = useForm<DescriptionFormData>({
-    resolver: zodResolver(descriptionSchema),
-  });
-
-  const jobDetailsForm = useForm<JobDetailsFormData>({
-    resolver: zodResolver(jobDetailsSchema),
-  });
-
   const changeOrderForm = useForm<ChangeOrderFormData>({
     resolver: zodResolver(changeOrderSchema),
     defaultValues: {
-      lineItems: [{ description: '', price: '' }],
+      lineItems: [{ description: '', price: '', isAllocation: false }],
       notes: '',
       status: 'created',
+      title: '',
     },
   });
 
@@ -323,100 +312,13 @@ export default function JobDetailPage() {
     );
   }
 
-  const handleEditAddress = async () => {
-    setEditingSection('address');
-    addressForm.reset({
-      addressLine1: job.addressLine1 || '',
-      addressLine2: job.addressLine2 || '',
-      city: job.city || '',
-      state: job.state || '',
-      postalCode: job.postalCode || '',
-      country: job.country || '',
-    });
-  };
-
-  const handleEditDescription = () => {
-    setEditingSection('description');
-    descriptionForm.reset({
-      description: job.description || '',
-    });
-  };
-
-  const handleEditDetails = () => {
-    setEditingSection('details');
-    jobDetailsForm.reset({
-      price: formatCurrency(job.price),
-      estimatedStartDate: formatDateOnlyForInput(job.estimatedStartDate),
-      estimatedEndDate: formatDateOnlyForInput(job.estimatedEndDate),
-      actualStartDate: formatDateOnlyForInput(job.actualStartDate),
-      actualEndDate: formatDateOnlyForInput(job.actualEndDate),
-    });
-  };
-
-  const handleCancel = () => {
-    setEditingSection(null);
-    addressForm.reset();
-    descriptionForm.reset();
-    jobDetailsForm.reset();
-  };
-
-  const onSubmitAddress = async (data: AddressFormData) => {
-    setIsSubmitting(true);
-    try {
-      await api.PATCH('/jobs/{jobId}', {
-        params: {
-          path: {
-            jobId: job.jobId,
-          },
-        },
-        body: {
-          addressLine1: data.addressLine1 || null,
-          addressLine2: data.addressLine2 || null,
-          city: data.city || null,
-          state: data.state || null,
-          postalCode: data.postalCode || null,
-          country: data.country || null,
-        } as any,
-      });
-      queryClient.invalidateQueries({ queryKey: ['jobs'] });
-      setEditingSection(null);
-    } catch (error) {
-      console.error('Update address error:', error);
-      alert('Failed to update address. Please try again.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const onSubmitDescription = async (data: DescriptionFormData) => {
-    setIsSubmitting(true);
-    try {
-      await api.PATCH('/jobs/{jobId}', {
-        params: {
-          path: {
-            jobId: job.jobId,
-          },
-        },
-        body: {
-          description: data.description || null,
-        } as any,
-      });
-      queryClient.invalidateQueries({ queryKey: ['jobs'] });
-      setEditingSection(null);
-    } catch (error) {
-      console.error('Update description error:', error);
-      alert('Failed to update description. Please try again.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
   const handleCreateChangeOrder = () => {
     setIsCreateChangeOrderOpen(true);
     changeOrderForm.reset({
-      lineItems: [{ description: '', price: '' }],
+      lineItems: [{ description: '', price: '', isAllocation: false }],
       notes: '',
       status: 'created',
+      title: '',
     });
   };
 
@@ -427,9 +329,11 @@ export default function JobDetailPage() {
       lineItems: changeOrder.lineItems.map((item) => ({
         description: item.description,
         price: item.price ? item.price.toFixed(2) : '',
+        isAllocation: (item as any).isAllocation ?? false,
       })),
       notes: changeOrder.notes || '',
       status: changeOrder.status,
+      title: changeOrder.title,
     });
   };
 
@@ -531,7 +435,7 @@ export default function JobDetailPage() {
               paymentDrawId: editingPaymentDrawId,
             },
           },
-          body: body as any,
+          body,
         });
       } else {
         await api.PUT('/jobs/paymentdraws/{jobId}', {
@@ -540,7 +444,7 @@ export default function JobDetailPage() {
               jobId: currentJob.jobId,
             },
           },
-          body: body as any,
+          body,
         });
       }
 
@@ -560,6 +464,7 @@ export default function JobDetailPage() {
       const lineItems = data.lineItems.map((item) => ({
         description: item.description,
         price: item.price ? parseFloat(item.price) : null,
+        isAllocation: item.isAllocation ?? false,
       }));
 
       if (editingChangeOrderId) {
@@ -574,7 +479,7 @@ export default function JobDetailPage() {
             lineItems,
             notes: data.notes || null,
             status: data.status,
-          } as any,
+          },
         });
       } else {
         await api.POST('/jobs/changeorders/{jobId}', {
@@ -584,10 +489,11 @@ export default function JobDetailPage() {
             },
           },
           body: {
+            title: data.title,
             lineItems,
             notes: data.notes || undefined,
             status: data.status,
-          } as any,
+          },
         });
       }
       queryClient.invalidateQueries({ queryKey: ['changeOrders', jobId] });
@@ -755,53 +661,6 @@ export default function JobDetailPage() {
     }
   };
 
-  const onSubmitDetails = async (data: JobDetailsFormData) => {
-    setIsSubmitting(true);
-    try {
-      const formatDateToISO = (dateStr: string | undefined) => {
-        if (!dateStr || dateStr === '') return null;
-        return new Date(dateStr + 'T00:00:00').toISOString();
-      };
-
-      await api.PATCH('/jobs/{jobId}', {
-        params: {
-          path: {
-            jobId: job.jobId,
-          },
-        },
-        body: {
-          price: data.price ? parseFloat(data.price) : null,
-          estimatedStartDate: formatDateToISO(data.estimatedStartDate) as string | null | undefined,
-          estimatedEndDate: formatDateToISO(data.estimatedEndDate) as string | null | undefined,
-          actualStartDate: formatDateToISO(data.actualStartDate) as string | null | undefined,
-          actualEndDate: formatDateToISO(data.actualEndDate) as string | null | undefined,
-        } as any,
-      });
-      queryClient.invalidateQueries({ queryKey: ['jobs'] });
-      setEditingSection(null);
-    } catch (error) {
-      console.error('Update job details error:', error);
-      alert('Failed to update job details. Please try again.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-  // <Breadcrumb>
-  //           <BreadcrumbList>
-  //             <BreadcrumbItem>
-  //               <BreadcrumbLink asChild>
-  //                 <Link href="/customers" className="text-2xl">
-  //                   Customers
-  //                 </Link>
-  //               </BreadcrumbLink>
-  //             </BreadcrumbItem>
-  //             <BreadcrumbSeparator />
-  //             <BreadcrumbItem>
-  //               <BreadcrumbPage className="text-2xl">{customerName}</BreadcrumbPage>
-  //             </BreadcrumbItem>
-  //           </BreadcrumbList>
-  //         </Breadcrumb>
-
   return (
     <>
       <PageHeader
@@ -919,6 +778,7 @@ export default function JobDetailPage() {
           isLoading={isLoadingChangeOrders}
           changeOrders={changeOrdersData}
           onEdit={handleEditChangeOrder}
+          onCreate={handleCreateChangeOrder}
         />
 
         <PaymentDrawsCard

@@ -39,6 +39,7 @@ const lineItemSchema = z.object({
   startDate: z.string().optional(),
   endDate: z.string().optional(),
   contractor: z.string().optional(),
+  isAllocation: z.boolean().optional(),
 });
 
 const bidLineItemsSchema = z.object({
@@ -53,6 +54,7 @@ type BidLineItem = {
   startDate?: string | null;
   endDate?: string | null;
   contractor?: string | null;
+  isAllocation?: boolean;
 };
 
 type Bid = {
@@ -92,6 +94,7 @@ export function BidLineItemsCard({ bidId, bid }: BidLineItemsCardProps) {
     startDate?: string;
     endDate?: string;
     contractor?: string;
+    isAllocation?: boolean;
   } | null>(null);
 
   const addLineItemButtonRef = useRef<HTMLButtonElement>(null);
@@ -106,8 +109,9 @@ export function BidLineItemsCard({ bidId, bid }: BidLineItemsCardProps) {
             startDate: item.startDate ? formatDateOnlyForInput(item.startDate) : '',
             endDate: item.endDate ? formatDateOnlyForInput(item.endDate) : '',
             contractor: item.contractor || '',
+            isAllocation: item.isAllocation ?? false,
           }))
-        : [{ description: '', price: '', startDate: '', endDate: '', contractor: '' }],
+        : [{ description: '', price: '', startDate: '', endDate: '', contractor: '', isAllocation: false }],
     },
   });
 
@@ -122,6 +126,7 @@ export function BidLineItemsCard({ bidId, bid }: BidLineItemsCardProps) {
         startDate: item.startDate ? formatDateOnlyForInput(item.startDate) : '',
         endDate: item.endDate ? formatDateOnlyForInput(item.endDate) : '',
         contractor: item.contractor || '',
+        isAllocation: item.isAllocation ?? false,
       })),
     });
   };
@@ -145,6 +150,7 @@ export function BidLineItemsCard({ bidId, bid }: BidLineItemsCardProps) {
         startDate: formatDateToISO(item.startDate),
         endDate: formatDateToISO(item.endDate),
         contractor: item.contractor || null,
+        isAllocation: item.isAllocation ?? false,
       }));
 
       await api.PATCH('/bids/{bidId}', {
@@ -175,6 +181,7 @@ export function BidLineItemsCard({ bidId, bid }: BidLineItemsCardProps) {
       startDate: item.startDate ? formatDateOnlyForInput(item.startDate) : '',
       endDate: item.endDate ? formatDateOnlyForInput(item.endDate) : '',
       contractor: item.contractor || '',
+      isAllocation: item.isAllocation ?? false,
     });
   };
 
@@ -195,6 +202,7 @@ export function BidLineItemsCard({ bidId, bid }: BidLineItemsCardProps) {
             startDate: item.startDate ? formatDateOnlyForInput(item.startDate) : '',
             endDate: item.endDate ? formatDateOnlyForInput(item.endDate) : '',
             contractor: item.contractor || '',
+            isAllocation: item.isAllocation ?? false,
           }));
 
     const updatedLineItems = [...currentLineItems];
@@ -204,6 +212,7 @@ export function BidLineItemsCard({ bidId, bid }: BidLineItemsCardProps) {
       startDate: editingRowData.startDate || '',
       endDate: editingRowData.endDate || '',
       contractor: editingRowData.contractor || '',
+      isAllocation: editingRowData.isAllocation ?? false,
     };
 
     lineItemsForm.setValue('lineItems', updatedLineItems, { shouldDirty: true });
@@ -227,6 +236,7 @@ export function BidLineItemsCard({ bidId, bid }: BidLineItemsCardProps) {
             startDate: item.startDate ? formatDateOnlyForInput(item.startDate) : '',
             endDate: item.endDate ? formatDateOnlyForInput(item.endDate) : '',
             contractor: item.contractor || '',
+            isAllocation: item.isAllocation ?? false,
           }));
 
     const updatedLineItems = currentLineItems.filter((_, i) => i !== index);
@@ -252,6 +262,7 @@ export function BidLineItemsCard({ bidId, bid }: BidLineItemsCardProps) {
           startDate: item.startDate ? formatDateOnlyForInput(item.startDate) : '',
           endDate: item.endDate ? formatDateOnlyForInput(item.endDate) : '',
           contractor: item.contractor || '',
+          isAllocation: item.isAllocation ?? false,
         })),
       });
     }
@@ -317,6 +328,22 @@ export function BidLineItemsCard({ bidId, bid }: BidLineItemsCardProps) {
                           placeholder="0.00"
                           type="text"
                           inputMode="decimal"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex shrink-0 flex-col items-center gap-1 pt-1">
+                      <Label
+                        htmlFor={`lineItems.${index}.isAllocation`}
+                        className="text-sm text-slate-500"
+                      >
+                        Allocation
+                      </Label>
+                      <div className="flex h-10 items-center">
+                        <input
+                          id={`lineItems.${index}.isAllocation`}
+                          type="checkbox"
+                          {...lineItemsForm.register(`lineItems.${index}.isAllocation`)}
+                          className="h-4 w-4 rounded border-slate-300"
                         />
                       </div>
                     </div>
@@ -386,7 +413,7 @@ export function BidLineItemsCard({ bidId, bid }: BidLineItemsCardProps) {
                   'lineItems',
                   [
                     ...currentItems,
-                    { description: '', price: '', startDate: '', endDate: '', contractor: '' },
+                    { description: '', price: '', startDate: '', endDate: '', contractor: '', isAllocation: false },
                   ],
                   {
                     shouldDirty: true,
@@ -447,6 +474,9 @@ export function BidLineItemsCard({ bidId, bid }: BidLineItemsCardProps) {
                             {item.price !== null && item.price !== undefined
                               ? formatCurrency(item.price)
                               : 'N/A'}
+                            {item.isAllocation && (
+                              <span className="ml-1 text-xs text-slate-500">(A)</span>
+                            )}
                           </span>
                         </td>
                         <td className="border-collapse border border-slate-200 px-4 py-3">
@@ -475,6 +505,12 @@ export function BidLineItemsCard({ bidId, bid }: BidLineItemsCardProps) {
                 </tbody>
               </table>
             </div>
+            {bid.lineItems.some((item) => item.isAllocation) && (
+              <div className="mt-2 px-4 pb-1 text-xs text-slate-500">
+                <span className="font-medium">(A)</span> — This line item is an allocation. Cost can be less or
+                more than the allocation based on materials pricing.
+              </div>
+            )}
           </div>
         )}
       </CardContent>

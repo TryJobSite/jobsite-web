@@ -81,6 +81,10 @@ export function PaymentDrawsCard({ paymentDraws, onView, onEdit, onCreate }: Pay
                 </Button>
               </div>
             ))}
+            <Button variant="outline" size="sm" className="mt-2" onClick={onCreate}>
+              <Plus className="mr-2 h-4 w-4" />
+              Add Payment Draw
+            </Button>
           </div>
         ) : (
           <div className="py-12 text-center">

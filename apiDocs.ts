@@ -661,7 +661,7 @@ export interface paths {
                         estimatedStartDate?: string;
                         /** Format: date-time */
                         estimatedEndDate?: string;
-                        budget?: number;
+                        price?: number;
                         addressLine1?: string;
                         addressLine2?: string;
                         city?: string;
@@ -786,7 +786,7 @@ export interface paths {
                         actualStartDate?: string | null;
                         /** Format: date-time */
                         actualEndDate?: string | null;
-                        budget?: number | null;
+                        price?: number | null;
                         addressLine1?: string | null;
                         addressLine2?: string | null;
                         city?: string | null;
@@ -1071,6 +1071,7 @@ export interface paths {
                                     lineItems: {
                                         description: string;
                                         price?: number | null;
+                                        isAllocation: boolean;
                                     }[];
                                     notes: string | null;
                                     /** @enum {string} */
@@ -1102,6 +1103,7 @@ export interface paths {
                         lineItems: {
                             description: string;
                             price?: number | null;
+                            isAllocation: boolean;
                         }[];
                         notes?: string;
                         /** @enum {string} */
@@ -1127,6 +1129,7 @@ export interface paths {
                                     lineItems: {
                                         description: string;
                                         price?: number | null;
+                                        isAllocation: boolean;
                                     }[];
                                     notes: string | null;
                                     /** @enum {string} */
@@ -1177,6 +1180,7 @@ export interface paths {
                         lineItems?: {
                             description: string;
                             price?: number | null;
+                            isAllocation: boolean;
                         }[];
                         notes?: string | null;
                         /** @enum {string} */
@@ -1202,6 +1206,7 @@ export interface paths {
                                     lineItems: {
                                         description: string;
                                         price?: number | null;
+                                        isAllocation: boolean;
                                     }[];
                                     notes: string | null;
                                     /** @enum {string} */
@@ -1244,10 +1249,10 @@ export interface paths {
                         /** Format: date-time */
                         actualPaymentDate?: string | null;
                         /** Format: date-time */
-                        dateRequested?: string;
+                        dateRequested?: string | null;
                         /** @enum {string} */
                         status?: "future" | "requested" | "paid";
-                        description?: string;
+                        description?: string | null;
                         images?: string[];
                         shouldNotifyCustomer?: boolean;
                     };
@@ -1324,7 +1329,7 @@ export interface paths {
                         /** Format: date-time */
                         actualPaymentDate?: string | null;
                         /** Format: date-time */
-                        dateRequested?: string;
+                        dateRequested?: string | null;
                         /** @enum {string} */
                         status?: "future" | "requested" | "paid";
                         description?: string | null;
@@ -1778,6 +1783,7 @@ export interface paths {
                                         startDate?: string | null;
                                         endDate?: string | null;
                                         contractor?: string | null;
+                                        isAllocation: boolean;
                                     }[];
                                     notes: string | null;
                                     createdAt: string;
@@ -1845,6 +1851,7 @@ export interface paths {
                             startDate?: string | null;
                             endDate?: string | null;
                             contractor?: string | null;
+                            isAllocation: boolean;
                         }[];
                         notes?: string;
                     };
@@ -1884,6 +1891,7 @@ export interface paths {
                                         startDate?: string | null;
                                         endDate?: string | null;
                                         contractor?: string | null;
+                                        isAllocation: boolean;
                                     }[];
                                     notes: string | null;
                                     createdAt: string;
@@ -2001,6 +2009,7 @@ export interface paths {
                             startDate?: string | null;
                             endDate?: string | null;
                             contractor?: string | null;
+                            isAllocation: boolean;
                         }[];
                         notes?: string | null;
                     };
@@ -2040,6 +2049,7 @@ export interface paths {
                                         startDate?: string | null;
                                         endDate?: string | null;
                                         contractor?: string | null;
+                                        isAllocation: boolean;
                                     }[];
                                     notes: string | null;
                                     createdAt: string;
@@ -2130,6 +2140,7 @@ export interface paths {
                                         startDate?: string | null;
                                         endDate?: string | null;
                                         contractor?: string | null;
+                                        isAllocation: boolean;
                                     }[];
                                     notes: string | null;
                                     createdAt: string;
@@ -2195,6 +2206,7 @@ export interface paths {
                                         startDate?: string | null;
                                         endDate?: string | null;
                                         contractor?: string | null;
+                                        isAllocation: boolean;
                                     }[];
                                     notes: string | null;
                                     createdAt: string;
