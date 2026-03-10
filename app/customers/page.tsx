@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -75,6 +75,7 @@ function formatContactMethod(method: string | null | undefined): string {
 export default function CustomersPage() {
   const { api } = useApi();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
@@ -87,6 +88,12 @@ export default function CustomersPage() {
       window.removeEventListener('openCreateCustomerDialog', handleOpenDialog);
     };
   }, []);
+
+  useEffect(() => {
+    if (searchParams.get('openCreate') === 'true') {
+      setIsCreateDialogOpen(true);
+    }
+  }, [searchParams]);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -116,6 +123,7 @@ export default function CustomersPage() {
   };
 
   const onSubmitCreateCustomer = async (data: CustomerFormData) => {
+    const returnTo = searchParams.get('returnTo');
     setIsSubmitting(true);
     try {
       const response = await api.POST('/customers', {
@@ -137,6 +145,9 @@ export default function CustomersPage() {
       setIsCreateDialogOpen(false);
       createForm.reset();
       queryClient.invalidateQueries({ queryKey: ['customers'] });
+      if (returnTo === 'jobs') {
+        router.push('/jobs?openCreate=true');
+      }
     } catch (error) {
       console.error('Create customer error:', error);
       alert('Failed to create customer. Please try again.');

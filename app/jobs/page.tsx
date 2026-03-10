@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -131,6 +131,7 @@ function parsePriceFromInput(value: string): string {
 export default function JobsPage() {
   const { api } = useApi();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
@@ -143,6 +144,15 @@ export default function JobsPage() {
       window.removeEventListener('openCreateJobDialog', handleOpenDialog);
     };
   }, []);
+
+  useEffect(() => {
+    if (searchParams.get('openCreate') === 'true') {
+      setIsCreateDialogOpen(true);
+      // Clean up the param without a full navigation
+      window.history.replaceState(null, '', '/jobs');
+    }
+  }, [searchParams]);
+
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingJob, setEditingJob] = useState<Job | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -300,7 +310,6 @@ export default function JobsPage() {
           country: data.country || null,
         } as any,
       });
-      console.log('Update job response:', response);
       setIsEditDialogOpen(false);
       setEditingJob(null);
       editForm.reset();
@@ -465,7 +474,24 @@ export default function JobsPage() {
                   </Label>
                   <select
                     id="customerId"
-                    {...createForm.register('customerId')}
+                    {...(() => {
+                      const { onChange, ...rest } = createForm.register('customerId');
+                      return {
+                        ...rest,
+                        onChange: (e: React.ChangeEvent<HTMLSelectElement>) => {
+                          if (e.target.value === '__create_new__') {
+                            const params = new URLSearchParams(searchParams.toString());
+                            params.set('openCreate', 'true');
+                            params.set('returnTo', 'jobs');
+                            console.log('params', params.toString());
+                            e.target.value = '';
+                            router.push(`/customers?${params.toString()}`);
+                            return;
+                          }
+                          onChange(e);
+                        },
+                      };
+                    })()}
                     className={`flex h-10 w-full rounded-md border border-input bg-background px-3 py-2
                       text-sm ring-offset-background focus-visible:ring-2 focus-visible:ring-ring
                       focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed
@@ -477,6 +503,7 @@ export default function JobsPage() {
                         {customer.firstName} {customer.lastName} ({customer.email})
                       </option>
                     ))}
+                    <option value="__create_new__">＋ Create new customer</option>
                   </select>
                   {createForm.formState.errors.customerId && (
                     <p className="text-sm text-red-500">{createForm.formState.errors.customerId.message}</p>
