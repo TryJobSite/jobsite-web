@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/(components)/shadcn/
 import { Button } from '@/(components)/shadcn/ui/button';
 import { Input } from '@/(components)/shadcn/ui/input';
 import { Label } from '@/(components)/shadcn/ui/label';
-import { Plus, Trash2, Edit2, Check, X } from 'lucide-react';
+import { Plus, Trash2, Edit2, Check, X, Info } from 'lucide-react';
 import { useApi } from '@/(hooks)/useApi';
 function formatDate(dateString: string | null | undefined): string {
   if (!dateString) return 'Not set';
@@ -332,12 +332,20 @@ export function BidLineItemsCard({ bidId, bid }: BidLineItemsCardProps) {
                       </div>
                     </div>
                     <div className="flex shrink-0 flex-col items-center gap-1 pt-1">
-                      <Label
-                        htmlFor={`lineItems.${index}.isAllocation`}
-                        className="text-sm text-slate-500"
-                      >
-                        Allocation
-                      </Label>
+                      <div className="flex items-center gap-1">
+                        <Label
+                          htmlFor={`lineItems.${index}.isAllocation`}
+                          className="text-sm text-slate-500"
+                        >
+                          Allocation
+                        </Label>
+                        <span className="group relative cursor-help">
+                          <Info className="h-3.5 w-3.5 text-slate-400" />
+                          <span className="absolute bottom-full left-1/2 mb-1 hidden w-48 -translate-x-1/2 rounded bg-slate-800 px-2 py-1 text-xs text-white group-hover:block">
+                            Check this box if this line item is an allocation vs a set price
+                          </span>
+                        </span>
+                      </div>
                       <div className="flex h-10 items-center">
                         <input
                           id={`lineItems.${index}.isAllocation`}

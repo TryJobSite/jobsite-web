@@ -11,7 +11,7 @@ import {
 import { Button } from '@/(components)/shadcn/ui/button';
 import { Input } from '@/(components)/shadcn/ui/input';
 import { Label } from '@/(components)/shadcn/ui/label';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Info } from 'lucide-react';
 import { UseFormReturn } from 'react-hook-form';
 
 type ChangeOrderFormData = {
@@ -114,12 +114,20 @@ export function ChangeOrderModal({
                     </div>
                   </div>
                   <div className="flex shrink-0 flex-col items-center gap-1 pt-1">
-                    <Label
-                      htmlFor={`co-lineItems.${index}.isAllocation`}
-                      className="text-sm text-slate-500"
-                    >
-                      Allocation
-                    </Label>
+                    <div className="flex items-center gap-1">
+                      <Label
+                        htmlFor={`co-lineItems.${index}.isAllocation`}
+                        className="text-sm text-slate-500"
+                      >
+                        Allocation
+                      </Label>
+                      <span className="group relative cursor-help">
+                        <Info className="h-3.5 w-3.5 text-slate-400" />
+                        <span className="absolute bottom-full left-1/2 mb-1 hidden w-48 -translate-x-1/2 rounded bg-slate-800 px-2 py-1 text-xs text-white group-hover:block">
+                          Check this box if this line item is an allocation vs a set price
+                        </span>
+                      </span>
+                    </div>
                     <div className="flex h-10 items-center">
                       <input
                         id={`co-lineItems.${index}.isAllocation`}
