@@ -42,7 +42,7 @@ const jobSchema = z.object({
   estimatedEndDate: z.string().optional(),
   actualStartDate: z.string().optional(),
   actualEndDate: z.string().optional(),
-  budget: z.string().optional(),
+  price: z.string().optional(),
   addressLine1: z.string().optional(),
   addressLine2: z.string().optional(),
   city: z.string().optional(),
@@ -237,7 +237,7 @@ export default function JobsPage() {
           status: data.status,
           estimatedStartDate: formatDateToISO(data.estimatedStartDate),
           estimatedEndDate: formatDateToISO(data.estimatedEndDate),
-          budget: data.budget ? parseFloat(data.budget) : undefined,
+          price: data.price ? parseFloat(data.price) : undefined,
           addressLine1: data.addressLine1 || undefined,
           addressLine2: data.addressLine2 || undefined,
           city: data.city || undefined,
@@ -291,7 +291,7 @@ export default function JobsPage() {
           estimatedEndDate: formatDateToISO(data.estimatedEndDate) as string | null | undefined,
           actualStartDate: formatDateTime(data.actualStartDate) as string | null | undefined,
           actualEndDate: formatDateTime(data.actualEndDate) as string | null | undefined,
-          budget: data.budget ? parseFloat(data.budget) : null,
+          price: data.price ? parseFloat(data.price) : null,
           addressLine1: data.addressLine1 || null,
           addressLine2: data.addressLine2 || null,
           city: data.city || null,
@@ -542,15 +542,15 @@ export default function JobsPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="budget">Budget</Label>
+                  <Label htmlFor="price">Price</Label>
                   <div className="relative">
                     <span className="absolute top-1/2 left-3 -translate-y-1/2 text-slate-500">$</span>
                     <Input
-                      id="budget"
+                      id="price"
                       type="text"
                       placeholder="0.00"
                       className="pl-7"
-                      {...createForm.register('budget', {
+                      {...createForm.register('price', {
                         onChange: (e) => {
                           const parsed = parseBudgetFromInput(e.target.value);
                           e.target.value = parsed;
@@ -727,15 +727,15 @@ export default function JobsPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="edit-budget">Budget</Label>
+                  <Label htmlFor="edit-price">Price</Label>
                   <div className="relative">
                     <span className="absolute top-1/2 left-3 -translate-y-1/2 text-slate-500">$</span>
                     <Input
-                      id="edit-budget"
+                      id="edit-price"
                       type="text"
                       placeholder="0.00"
                       className="pl-7"
-                      {...editForm.register('budget', {
+                      {...editForm.register('price', {
                         onChange: (e) => {
                           const parsed = parseBudgetFromInput(e.target.value);
                           e.target.value = parsed;
