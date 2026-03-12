@@ -106,6 +106,79 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/forgot-password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query: {
+                    email: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Success */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            success: boolean;
+                            message: string;
+                            responseObject: unknown;
+                            statusCode: number;
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        token: string;
+                        newPassword: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Success */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            success: boolean;
+                            message: string;
+                            responseObject: unknown;
+                            statusCode: number;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/me": {
         parameters: {
             query?: never;
@@ -1430,7 +1503,9 @@ export interface paths {
         };
         get: {
             parameters: {
-                query?: never;
+                query?: {
+                    uploadType?: string;
+                };
                 header?: never;
                 path: {
                     jobId: string;
@@ -1456,6 +1531,8 @@ export interface paths {
                                     fileName: string;
                                     fileType: string;
                                     notes: string | null;
+                                    /** @enum {string} */
+                                    uploadType: "jobDocument" | "jobPhoto" | "jobContract";
                                     createdAt: string;
                                     updatedAt: string;
                                     documentUrl: string;
@@ -1483,6 +1560,8 @@ export interface paths {
                         fileType: string;
                         fileData: string;
                         notes?: string | null;
+                        /** @enum {string} */
+                        uploadType?: "jobDocument" | "jobPhoto" | "jobContract";
                     };
                 };
             };
@@ -1504,6 +1583,8 @@ export interface paths {
                                     fileName: string;
                                     fileType: string;
                                     notes: string | null;
+                                    /** @enum {string} */
+                                    uploadType: "jobDocument" | "jobPhoto" | "jobContract";
                                     createdAt: string;
                                     updatedAt: string;
                                     documentUrl: string;
@@ -2281,6 +2362,7 @@ export interface components {
     schemas: {
         Index: Record<string, never>;
         Signup: Record<string, never>;
+        ForgotPassword: Record<string, never>;
         Me: Record<string, never>;
         "Login User": {
             a: string;

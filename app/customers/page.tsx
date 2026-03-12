@@ -147,6 +147,8 @@ function CustomersPageInner() {
       queryClient.invalidateQueries({ queryKey: ['customers'] });
       if (returnTo === 'jobs') {
         router.push('/jobs?openCreate=true');
+      } else if (returnTo === 'bids') {
+        router.push('/bids?openCreate=true');
       }
     } catch (error) {
       console.error('Create customer error:', error);

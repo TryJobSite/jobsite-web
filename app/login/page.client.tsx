@@ -107,6 +107,12 @@ export default function LoginPageClient() {
               </Button>
 
               <div className="text-center text-sm text-slate-600">
+                <Link href="/forgot-password" className="font-medium text-primary hover:underline">
+                  Forgot your password?
+                </Link>
+              </div>
+
+              <div className="text-center text-sm text-slate-600">
                 Don't have an account?{' '}
                 <Link href="/signup" className="font-medium text-primary hover:underline">
                   Sign up

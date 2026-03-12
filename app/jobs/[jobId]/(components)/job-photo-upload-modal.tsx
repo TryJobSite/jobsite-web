@@ -13,45 +13,43 @@ import { Input } from '@/(components)/shadcn/ui/input';
 import { Label } from '@/(components)/shadcn/ui/label';
 import { UseFormReturn } from 'react-hook-form';
 
-type DocumentUploadFormData = {
+type PhotoUploadFormData = {
   fileName: string;
   fileType: string;
   fileData: string;
   notes?: string | null;
 };
 
-type DocumentUploadModalProps = {
+type JobPhotoUploadModalProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   isSubmitting: boolean;
-  documentForm: UseFormReturn<DocumentUploadFormData>;
-  onSubmit: (data: DocumentUploadFormData) => Promise<void>;
+  photoForm: UseFormReturn<PhotoUploadFormData>;
+  onSubmit: (data: PhotoUploadFormData) => Promise<void>;
   onFileSelect: (file: File) => void;
   selectedFile: File | null;
 };
 
-export function DocumentUploadModal({
+export function JobPhotoUploadModal({
   open,
   onOpenChange,
   isSubmitting,
-  documentForm,
+  photoForm,
   onSubmit,
   onFileSelect,
   selectedFile,
-}: DocumentUploadModalProps) {
+}: JobPhotoUploadModalProps) {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       onFileSelect(file);
-      // Convert file to base64
       const reader = new FileReader();
       reader.onload = (event) => {
         const base64String = event.target?.result as string;
-        // Remove data URL prefix (e.g., "data:image/png;base64,")
         const base64Data = base64String.split(',')[1] || base64String;
-        documentForm.setValue('fileData', base64Data);
-        documentForm.setValue('fileName', file.name);
-        documentForm.setValue('fileType', file.type || 'application/octet-stream');
+        photoForm.setValue('fileData', base64Data);
+        photoForm.setValue('fileName', file.name);
+        photoForm.setValue('fileType', file.type || 'image/jpeg');
       };
       reader.readAsDataURL(file);
     }
@@ -61,18 +59,18 @@ export function DocumentUploadModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Upload Document</DialogTitle>
-          <DialogDescription>Upload a document for this job.</DialogDescription>
+          <DialogTitle>Upload Job Photo</DialogTitle>
+          <DialogDescription>Upload a photo for this job.</DialogDescription>
         </DialogHeader>
-        <form onSubmit={documentForm.handleSubmit(onSubmit)} className="space-y-6">
+        <form onSubmit={photoForm.handleSubmit(onSubmit)} className="space-y-6">
           <div>
-            <Label htmlFor="doc-file" className="text-sm font-medium">
-              File <span className="text-red-500">*</span>
+            <Label htmlFor="photo-file" className="text-sm font-medium">
+              Photo <span className="text-red-500">*</span>
             </Label>
             <Input
-              id="doc-file"
+              id="photo-file"
               type="file"
-              accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.rtf,.ppt,.pptx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/*"
+              accept="image/*"
               onChange={handleFileChange}
               className="mt-2"
               disabled={isSubmitting}
@@ -85,17 +83,17 @@ export function DocumentUploadModal({
           </div>
 
           <div>
-            <Label htmlFor="doc-notes" className="text-sm font-medium">
+            <Label htmlFor="photo-notes" className="text-sm font-medium">
               Notes
             </Label>
             <textarea
-              id="doc-notes"
-              {...documentForm.register('notes')}
+              id="photo-notes"
+              {...photoForm.register('notes')}
               className="mt-2 flex min-h-[100px] w-full rounded-md border border-slate-200 bg-white px-3 py-2
                 text-sm ring-offset-white placeholder:text-slate-500 focus-visible:ring-2
                 focus-visible:ring-slate-950 focus-visible:ring-offset-2 focus-visible:outline-none
                 disabled:cursor-not-allowed disabled:opacity-50"
-              placeholder="Additional notes about this document..."
+              placeholder="Additional notes about this photo..."
               rows={4}
               disabled={isSubmitting}
             />

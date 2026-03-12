@@ -14,10 +14,12 @@ import { ScopeOfWorkCard } from './(components)/scope-of-work-card';
 import { ChangeOrdersCard } from './(components)/change-orders-card';
 import { PaymentDrawsCard } from './(components)/payment-draws-card';
 import { DocumentsCard } from './(components)/documents-card';
+import { JobPhotosCard } from './(components)/job-photos-card';
 import { TimelineCard } from './(components)/timeline-card';
 import { ChangeOrderModal } from './(components)/change-order-modal';
 import { PaymentDrawModal } from './(components)/payment-draw-modal';
 import { DocumentUploadModal } from './(components)/document-upload-modal';
+import { JobPhotoUploadModal } from './(components)/job-photo-upload-modal';
 import { DocumentViewerModal } from './(components)/document-viewer-modal';
 import { JobDetailsUpdateModal } from './(components)/job-details-update-modal';
 import {
@@ -115,6 +117,8 @@ export default function JobDetailPage() {
   const [viewingPaymentDraw, setViewingPaymentDraw] = useState<PaymentDraw | null>(null);
   const [isDocumentUploadOpen, setIsDocumentUploadOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isPhotoUploadOpen, setIsPhotoUploadOpen] = useState(false);
+  const [selectedPhotoFile, setSelectedPhotoFile] = useState<File | null>(null);
   const [viewingDocument, setViewingDocument] = useState<{
     clientUploadId: string;
     fileName: string;
@@ -149,6 +153,21 @@ export default function JobDetailPage() {
   });
 
   const documentForm = useForm<{
+    fileName: string;
+    fileType: string;
+    fileData: string;
+    notes?: string | null;
+  }>({
+    resolver: zodResolver(documentUploadSchema),
+    defaultValues: {
+      fileName: '',
+      fileType: '',
+      fileData: '',
+      notes: null,
+    },
+  });
+
+  const photoForm = useForm<{
     fileName: string;
     fileType: string;
     fileData: string;
@@ -230,8 +249,8 @@ export default function JobDetailPage() {
     },
   });
 
-  const { data: documentsData, isLoading: isLoadingDocuments } = useQuery({
-    queryKey: ['documents', jobId],
+  const { data: uploadsData, isLoading: isLoadingUploads } = useQuery({
+    queryKey: ['clientUploads', jobId],
     queryFn: async () => {
       try {
         const response = await api.GET('/jobs/clientuploads/{jobId}', {
@@ -247,6 +266,7 @@ export default function JobDetailPage() {
           s3Path: string;
           fileName: string;
           fileType: string;
+          uploadType?: string | null;
           notes: string | null;
           createdAt: string;
           updatedAt: string;
@@ -260,6 +280,9 @@ export default function JobDetailPage() {
       }
     },
   });
+
+  const documentsData = uploadsData?.filter((u) => u.uploadType !== 'jobPhoto');
+  const photosData = uploadsData?.filter((u) => u.uploadType === 'jobPhoto');
 
   const { data: jobsData, isLoading } = useQuery({
     queryKey: ['jobs'],
@@ -531,9 +554,10 @@ export default function JobDetailPage() {
           fileType: data.fileType,
           fileData: data.fileData,
           notes: data.notes || null,
+          uploadType: 'document',
         } as any,
       });
-      queryClient.invalidateQueries({ queryKey: ['documents', jobId] });
+      queryClient.invalidateQueries({ queryKey: ['clientUploads', jobId] });
       handleCloseDocumentModal();
     } catch (error) {
       console.error('Upload document error:', error);
@@ -557,7 +581,7 @@ export default function JobDetailPage() {
           },
         },
       });
-      queryClient.invalidateQueries({ queryKey: ['documents', jobId] });
+      queryClient.invalidateQueries({ queryKey: ['clientUploads', jobId] });
     } catch (error) {
       console.error('Delete document error:', error);
       alert('Failed to delete document. Please try again.');
@@ -582,6 +606,61 @@ export default function JobDetailPage() {
 
   const handleCloseDocumentViewer = () => {
     setViewingDocument(null);
+  };
+
+  const handleUploadPhoto = () => {
+    setIsPhotoUploadOpen(true);
+    setSelectedPhotoFile(null);
+    photoForm.reset({ fileName: '', fileType: '', fileData: '', notes: null });
+  };
+
+  const handlePhotoFileSelect = (file: File) => {
+    setSelectedPhotoFile(file);
+  };
+
+  const handleClosePhotoModal = () => {
+    setIsPhotoUploadOpen(false);
+    setSelectedPhotoFile(null);
+    photoForm.reset();
+  };
+
+  const onSubmitPhoto = async (data: { fileName: string; fileType: string; fileData: string; notes?: string | null }) => {
+    setIsSubmitting(true);
+    try {
+      await api.PUT('/jobs/clientuploads/{jobId}', {
+        params: { path: { jobId: job.jobId } },
+        body: {
+          fileName: data.fileName,
+          fileType: data.fileType,
+          fileData: data.fileData,
+          notes: data.notes || null,
+          uploadType: 'jobPhoto',
+        } as any,
+      });
+      queryClient.invalidateQueries({ queryKey: ['clientUploads', jobId] });
+      handleClosePhotoModal();
+    } catch (error) {
+      console.error('Upload photo error:', error);
+      alert('Failed to upload photo. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDeletePhoto = async (clientUploadId: string) => {
+    if (!confirm('Are you sure you want to delete this photo?')) return;
+    setIsSubmitting(true);
+    try {
+      await api.DELETE('/jobs/clientuploads/{jobId}/{clientUploadId}', {
+        params: { path: { jobId: job.jobId, clientUploadId } },
+      });
+      queryClient.invalidateQueries({ queryKey: ['clientUploads', jobId] });
+    } catch (error) {
+      console.error('Delete photo error:', error);
+      alert('Failed to delete photo. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleUpdateJobDetails = () => {
@@ -774,12 +853,19 @@ export default function JobDetailPage() {
         />
 
         <DocumentsCard
-          isLoading={isLoadingDocuments}
+          isLoading={isLoadingUploads}
           documents={documentsData}
           onUpload={handleUploadDocument}
           onDelete={handleDeleteDocument}
           onDownload={handleDownloadDocument}
           onView={handleViewDocument}
+        />
+
+        <JobPhotosCard
+          isLoading={isLoadingUploads}
+          photos={photosData}
+          onUpload={handleUploadPhoto}
+          onDelete={handleDeletePhoto}
         />
 
         <ChangeOrderModal
@@ -815,6 +901,16 @@ export default function JobDetailPage() {
           onSubmit={onSubmitDocument}
           onFileSelect={handleFileSelect}
           selectedFile={selectedFile}
+        />
+
+        <JobPhotoUploadModal
+          open={isPhotoUploadOpen}
+          onOpenChange={handleClosePhotoModal}
+          isSubmitting={isSubmitting}
+          photoForm={photoForm}
+          onSubmit={onSubmitPhoto}
+          onFileSelect={handlePhotoFileSelect}
+          selectedFile={selectedPhotoFile}
         />
 
         <DocumentViewerModal
