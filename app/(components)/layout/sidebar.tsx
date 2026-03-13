@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { Home, Briefcase, Settings, LogOut, Users, FileText } from 'lucide-react';
 import { Button } from '@/(components)/shadcn/ui/button';
@@ -43,7 +44,9 @@ export function Sidebar() {
   return (
     <aside className="flex h-screen w-44 flex-col border-r border-slate-200 bg-white">
       <div className="flex flex-1 flex-col gap-1 p-4">
-        <div className="mb-4 text-xl font-semibold tracking-tight">Job Site</div>
+        <div className="mb-4">
+          <Image src="/Jobsite-logo.png" alt="Jobsite" width={120} height={40} className="object-contain" />
+        </div>
         {navigationItems.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href || pathname.startsWith(item.href + '/');

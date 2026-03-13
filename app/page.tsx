@@ -94,8 +94,8 @@ export default function Home() {
                   Win more bids, deliver rock-solid contracts, and stay ahead of change orders.
                 </h1>
                 <p className="text-lg text-slate-600">
-                  TradeForge keeps your estimating, contract management, and change order workflows in one
-                  place. Spend less time on paperwork and more time on job sites.
+                  Jobsite keeps your estimating, contract management, and change order workflows in one place.
+                  Spend less time on paperwork and more time on job sites.
                 </p>
               </div>
               <div className="flex flex-col items-center gap-3 sm:flex-row">
@@ -174,13 +174,13 @@ export default function Home() {
             <div className="mx-auto flex max-w-5xl flex-col gap-10 px-6 md:flex-row md:items-center">
               <div className="flex-1 space-y-5">
                 <p className="text-sm font-semibold tracking-widest text-slate-500 uppercase">
-                  About TradeForge
+                  About Jobsite
                 </p>
                 <h3 className="text-3xl font-bold tracking-tight sm:text-4xl">
                   Built with field-tested workflows, trusted by contractors nationwide.
                 </h3>
                 <p className="text-lg text-slate-600">
-                  TradeForge was crafted alongside estimators, project managers, and operations leaders from
+                  Jobsite was crafted alongside estimators, project managers, and operations leaders from
                   electrical, plumbing, HVAC, and specialty trade companies. We focus on the paperwork so
                   crews can focus on craftsmanship.
                 </p>
@@ -191,7 +191,7 @@ export default function Home() {
               </div>
               <Card className="flex-1 border-slate-200 shadow-sm">
                 <CardHeader>
-                  <CardTitle className="text-xl">Why teams pick TradeForge</CardTitle>
+                  <CardTitle className="text-xl">Why teams pick Jobsite</CardTitle>
                   <CardDescription>
                     A single workspace for estimating, contracting, and change management across every
                     project.
@@ -222,13 +222,13 @@ export default function Home() {
                 Ready to modernize your estimating and contract workflows?
               </h4>
               <p className="mt-4 text-lg text-slate-600">
-                Join thousands of contractors who trust TradeForge to stay organized, profitable, and
-                responsive to clients.
+                Join thousands of contractors who trust Jobsite to stay organized, profitable, and responsive
+                to clients.
               </p>
               <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
                 <Button size="lg">Start Free Trial</Button>
                 <Button size="lg" variant="outline" asChild>
-                  <a href="mailto:sales@tradeforge.com">Talk to Sales</a>
+                  <a href="mailto:kevin@tryjobsite.com">Talk to Sales</a>
                 </Button>
               </div>
             </div>
@@ -240,7 +240,7 @@ export default function Home() {
             className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-6 text-sm
               text-slate-500 md:flex-row"
           >
-            <p>© {new Date().getFullYear()} TradeForge. All rights reserved.</p>
+            <p>© {new Date().getFullYear()} TryJobsite. All rights reserved.</p>
             <div className="flex items-center gap-4">
               <Link href="#product" className="hover:text-slate-700">
                 Product
