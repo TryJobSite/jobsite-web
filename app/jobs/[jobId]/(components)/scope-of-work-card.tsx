@@ -1,16 +1,32 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useQueryClient } from '@tanstack/react-query';
+import {
+  ColumnDef,
+  flexRender,
+  getCoreRowModel,
+  useReactTable,
+  VisibilityState,
+} from '@tanstack/react-table';
 import { Card, CardContent, CardHeader, CardTitle } from '@/(components)/shadcn/ui/card';
 import { Dialog, DialogContent } from '@/(components)/shadcn/ui/dialog';
 import { Button } from '@/(components)/shadcn/ui/button';
 import { Input } from '@/(components)/shadcn/ui/input';
 import { Label } from '@/(components)/shadcn/ui/label';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+  TableFooter,
+} from '@/(components)/shadcn/ui/table';
 import { Plus, Trash2, Edit2, Check, X, Info, Download } from 'lucide-react';
 import { useApi } from '@/(hooks)/useApi';
 import { ScopeOfWork } from './types';
@@ -32,6 +48,39 @@ const scopeOfWorkSchema = z.object({
 
 type ScopeOfWorkFormData = z.infer<typeof scopeOfWorkSchema>;
 
+type EditingRowData = {
+  description: string;
+  price?: string;
+  startDate?: string;
+  endDate?: string;
+  contractor?: string;
+  isAllocation?: boolean;
+};
+
+type LineItemRow = {
+  index: number;
+  description: string;
+  price: number | null;
+  startDate: string | null;
+  endDate: string | null;
+  contractor: string | null;
+  isAllocation: boolean;
+};
+
+type TableMeta = {
+  editingRowIndex: number | null;
+  editingRowData: EditingRowData | null;
+  setEditingRowData: React.Dispatch<React.SetStateAction<EditingRowData | null>>;
+  handleSaveRow: (index: number) => Promise<void>;
+  handleCancelEditRow: () => void;
+  handleEditRow: (index: number, item: any) => void;
+  handleDeleteRow: (index: number) => Promise<void>;
+  isSubmitting: boolean;
+  sowLineItems: any[];
+  isDescriptionNarrow: boolean;
+  pendingNewRow: boolean;
+};
+
 type ScopeOfWorkCardProps = {
   isLoading: boolean;
   sowData: ScopeOfWork | null | undefined;
@@ -45,19 +94,34 @@ export function ScopeOfWorkCard({ isLoading, sowData }: ScopeOfWorkCardProps) {
   const jobId = params.jobId as string;
 
   const [isCreating, setIsCreating] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [editingRowIndex, setEditingRowIndex] = useState<number | null>(null);
-  const [editingRowData, setEditingRowData] = useState<{
-    description: string;
-    price?: string;
-    startDate?: string;
-    endDate?: string;
-    contractor?: string;
-    isAllocation?: boolean;
-  } | null>(null);
+  const [editingRowData, setEditingRowData] = useState<EditingRowData | null>(null);
+  const [pendingNewRow, setPendingNewRow] = useState(false);
+
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({
+    isAllocation: false,
+  });
+  const [isDescriptionNarrow, setIsDescriptionNarrow] = useState(false);
+  const descriptionHeaderRef = useRef<HTMLTableCellElement>(null);
+
+  // Show/hide the isAllocation column based on whether a row is being edited
+  useEffect(() => {
+    setColumnVisibility({ isAllocation: editingRowIndex !== null });
+  }, [editingRowIndex]);
+
+  // Measure description column width to decide input vs textarea
+  useEffect(() => {
+    const el = descriptionHeaderRef.current;
+    if (!el) return;
+    const observer = new ResizeObserver(([entry]) => {
+      setIsDescriptionNarrow(entry.contentRect.width < 150);
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   const sowForm = useForm<ScopeOfWorkFormData>({
     resolver: zodResolver(scopeOfWorkSchema),
@@ -78,7 +142,6 @@ export function ScopeOfWorkCard({ isLoading, sowData }: ScopeOfWorkCardProps) {
 
   const handleCreate = () => {
     setIsCreating(true);
-    setIsEditing(false);
     sowForm.reset({
       lineItems: [
         { description: '', price: '', startDate: '', endDate: '', contractor: '', isAllocation: false },
@@ -87,27 +150,8 @@ export function ScopeOfWorkCard({ isLoading, sowData }: ScopeOfWorkCardProps) {
     });
   };
 
-  const handleEdit = () => {
-    handleCancelEditRow();
-    if (!sowData) return;
-    setIsEditing(true);
-    setIsCreating(false);
-    sowForm.reset({
-      lineItems: sowData.lineItems.map((item) => ({
-        description: item.description,
-        price: item.price !== null && item.price !== undefined ? item.price.toFixed(2) : '',
-        startDate: item.startDate ? formatDateOnlyForInput(item.startDate) : '',
-        endDate: item.endDate ? formatDateOnlyForInput(item.endDate) : '',
-        contractor: item.contractor || '',
-        isAllocation: (item as any).isAllocation ?? false,
-      })),
-      notes: sowData.notes || '',
-    });
-  };
-
   const handleCancel = () => {
     setIsCreating(false);
-    setIsEditing(false);
     sowForm.reset();
   };
 
@@ -118,32 +162,23 @@ export function ScopeOfWorkCard({ isLoading, sowData }: ScopeOfWorkCardProps) {
         params: { path: { jobId } },
       });
 
-      console.log('[PDF] responseObject:', response.data?.responseObject);
-
       const buffer = response.data?.responseObject?.buffer;
       let pdfBlob: Blob | null = null;
 
       if (typeof buffer === 'string') {
-        // base64-encoded string
         const binary = atob(buffer);
         const bytes = new Uint8Array(binary.length);
         for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
         pdfBlob = new Blob([bytes], { type: 'application/pdf' });
       } else if (Array.isArray(buffer)) {
-        // raw number[]
         pdfBlob = new Blob([new Uint8Array(buffer as number[])], { type: 'application/pdf' });
       } else if (buffer && typeof buffer === 'object' && 'data' in (buffer as any)) {
-        // Node.js Buffer serialised as { type: 'Buffer', data: number[] }
         pdfBlob = new Blob([new Uint8Array((buffer as any).data as number[])], {
           type: 'application/pdf',
         });
       } else {
-        // fallback: read the raw HTTP response body as a blob
-        console.log('[PDF] buffer shape unknown, falling back to response.response.blob()');
         pdfBlob = await response.response.blob();
       }
-
-      console.log('[PDF] blob size:', pdfBlob?.size, 'type:', pdfBlob?.type);
 
       if (pdfBlob && pdfBlob.size > 0) {
         setPdfUrl(URL.createObjectURL(pdfBlob));
@@ -182,32 +217,17 @@ export function ScopeOfWorkCard({ isLoading, sowData }: ScopeOfWorkCardProps) {
 
       if (isCreating) {
         await api.POST('/jobs/scopeofwork/{jobId}', {
-          params: {
-            path: {
-              jobId: jobId,
-            },
-          },
-          body: {
-            lineItems,
-            notes: data.notes || undefined,
-          } as any,
+          params: { path: { jobId } },
+          body: { lineItems, notes: data.notes || undefined } as any,
         });
       } else {
         await api.PATCH('/jobs/scopeofwork/{jobId}', {
-          params: {
-            path: {
-              jobId: jobId,
-            },
-          },
-          body: {
-            lineItems,
-            notes: data.notes || null,
-          } as any,
+          params: { path: { jobId } },
+          body: { lineItems, notes: data.notes || null } as any,
         });
       }
       queryClient.invalidateQueries({ queryKey: ['scopeOfWork', jobId] });
       setIsCreating(false);
-      setIsEditing(false);
     } catch (error) {
       console.error('Update scope of work error:', error);
       alert('Failed to save scope of work. Please try again.');
@@ -228,15 +248,30 @@ export function ScopeOfWorkCard({ isLoading, sowData }: ScopeOfWorkCardProps) {
     });
   };
 
+  const handleAddRow = () => {
+    if (!sowData) return;
+    const newIndex = sowData.lineItems.length;
+    setPendingNewRow(true);
+    setEditingRowIndex(newIndex);
+    setEditingRowData({
+      description: '',
+      price: '',
+      startDate: '',
+      endDate: '',
+      contractor: '',
+      isAllocation: false,
+    });
+  };
+
   const handleCancelEditRow = () => {
     setEditingRowIndex(null);
     setEditingRowData(null);
+    setPendingNewRow(false);
   };
 
   const handleSaveRow = async (index: number) => {
     if (!editingRowData || !sowData) return;
 
-    // Get current line items from form or sowData
     const currentLineItems =
       sowForm.getValues('lineItems').length > 0
         ? sowForm.getValues('lineItems')
@@ -248,11 +283,7 @@ export function ScopeOfWorkCard({ isLoading, sowData }: ScopeOfWorkCardProps) {
             contractor: item.contractor || '',
             isAllocation: (item as any).isAllocation ?? false,
           }));
-    console.log({
-      currentLineItems,
-      sowFormValues: sowForm.getValues('lineItems'),
-      sowDataLineItems: sowData.lineItems,
-    });
+
     const updatedLineItems = [...currentLineItems];
     updatedLineItems[index] = {
       description: editingRowData.description,
@@ -264,21 +295,15 @@ export function ScopeOfWorkCard({ isLoading, sowData }: ScopeOfWorkCardProps) {
     };
 
     sowForm.setValue('lineItems', updatedLineItems, { shouldDirty: true });
-    console.log('updatedLineItems', updatedLineItems);
-    // Submit the form
-    await onSubmit({
-      lineItems: updatedLineItems,
-      notes: sowData.notes || '',
-    });
-
+    await onSubmit({ lineItems: updatedLineItems, notes: sowData.notes || '' });
     setEditingRowIndex(null);
     setEditingRowData(null);
+    setPendingNewRow(false);
   };
 
   const handleDeleteRow = async (index: number) => {
     if (!sowData) return;
 
-    // Get current line items from form or sowData
     const currentLineItems =
       sowForm.getValues('lineItems').length > 0
         ? sowForm.getValues('lineItems')
@@ -299,17 +324,11 @@ export function ScopeOfWorkCard({ isLoading, sowData }: ScopeOfWorkCardProps) {
     }
 
     sowForm.setValue('lineItems', updatedLineItems, { shouldDirty: true });
-
-    // Submit the form
-    await onSubmit({
-      lineItems: updatedLineItems,
-      notes: sowData.notes || '',
-    });
+    await onSubmit({ lineItems: updatedLineItems, notes: sowData.notes || '' });
   };
 
-  // Initialize form with current data when viewing (not in create/edit mode)
   useEffect(() => {
-    if (sowData && !isCreating && !isEditing && sowData.lineItems.length > 0) {
+    if (sowData && !isCreating && sowData.lineItems.length > 0) {
       sowForm.reset({
         lineItems: sowData.lineItems.map((item) => ({
           description: item.description,
@@ -322,7 +341,263 @@ export function ScopeOfWorkCard({ isLoading, sowData }: ScopeOfWorkCardProps) {
         notes: sowData.notes || '',
       });
     }
-  }, [sowData, isCreating, isEditing, sowForm]);
+  }, [sowData, isCreating, sowForm]);
+
+  // Build row data for the table
+  const tableRows: LineItemRow[] = useMemo(() => {
+    const rows = (sowData?.lineItems ?? []).map((item, index) => ({
+      index,
+      description: item.description,
+      price: item.price ?? null,
+      startDate: item.startDate ?? null,
+      endDate: item.endDate ?? null,
+      contractor: item.contractor ?? null,
+      isAllocation: (item as any).isAllocation ?? false,
+    }));
+    if (pendingNewRow) {
+      rows.push({
+        index: rows.length,
+        description: '',
+        price: null,
+        startDate: null,
+        endDate: null,
+        contractor: null,
+        isAllocation: false,
+      });
+    }
+    return rows;
+  }, [sowData, pendingNewRow]);
+
+  const totalPrice = tableRows.reduce((sum, row) => sum + (row.price ?? 0), 0);
+
+  const columns = useMemo<ColumnDef<LineItemRow>[]>(
+    () => [
+      {
+        accessorKey: 'description',
+        header: 'Description',
+        cell: ({ row, table }) => {
+          const meta = table.options.meta as TableMeta;
+          const isEditingRow = meta.editingRowIndex === row.original.index;
+          if (!isEditingRow) {
+            return <span className="max-w-[200px] truncate text-sm">{row.original.description}</span>;
+          }
+          const isNewRow = meta.pendingNewRow && isEditingRow;
+          const sharedProps = {
+            value: meta.editingRowData?.description || '',
+            onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+              meta.setEditingRowData((prev) => (prev ? { ...prev, description: e.target.value } : null)),
+            placeholder: 'Item description',
+            className: 'w-full text-sm',
+            autoFocus: isNewRow,
+          };
+          return meta.isDescriptionNarrow ? (
+            <textarea
+              {...sharedProps}
+              rows={3}
+              className="w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-sm
+                ring-offset-background placeholder:text-muted-foreground focus-visible:ring-2
+                focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none
+                disabled:cursor-not-allowed disabled:opacity-50"
+            />
+          ) : (
+            <Input {...sharedProps} />
+          );
+        },
+      },
+      {
+        accessorKey: 'price',
+        header: 'Price',
+        cell: ({ row, table }) => {
+          const meta = table.options.meta as TableMeta;
+          const isEditingRow = meta.editingRowIndex === row.original.index;
+          return isEditingRow ? (
+            <div className="relative">
+              <span className="absolute top-1/2 left-3 -translate-y-1/2 text-slate-500">$</span>
+              <Input
+                value={meta.editingRowData?.price || ''}
+                onChange={(e) => {
+                  // Allow only digits and a single decimal point
+                  const raw = e.target.value.replace(/[^\d.]/g, '');
+                  const parts = raw.split('.');
+                  const sanitized = parts.length > 2 ? parts[0] + '.' + parts.slice(1).join('') : raw;
+                  meta.setEditingRowData((prev) => (prev ? { ...prev, price: sanitized } : null));
+                }}
+                placeholder="0.00"
+                type="text"
+                inputMode="decimal"
+                className="w-full pl-7"
+              />
+            </div>
+          ) : (
+            <span className="text-sm">
+              {row.original.price !== null
+                ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(
+                    row.original.price
+                  )
+                : 'N/A'}
+              {row.original.isAllocation && <span className="ml-1 text-xs text-slate-500">(A)</span>}
+            </span>
+          );
+        },
+      },
+      {
+        id: 'isAllocation',
+        header: 'Allocation',
+        cell: ({ row, table }) => {
+          const meta = table.options.meta as TableMeta;
+          const isEditingRow = meta.editingRowIndex === row.original.index;
+          return isEditingRow ? (
+            <input
+              type="checkbox"
+              checked={meta.editingRowData?.isAllocation ?? false}
+              onChange={(e) =>
+                meta.setEditingRowData((prev) => (prev ? { ...prev, isAllocation: e.target.checked } : null))
+              }
+              className="h-4 w-4 rounded border-slate-300"
+            />
+          ) : null;
+        },
+      },
+      {
+        accessorKey: 'startDate',
+        header: 'Start Date',
+        cell: ({ row, table }) => {
+          const meta = table.options.meta as TableMeta;
+          const isEditingRow = meta.editingRowIndex === row.original.index;
+          return isEditingRow ? (
+            <Input
+              value={meta.editingRowData?.startDate || ''}
+              onChange={(e) =>
+                meta.setEditingRowData((prev) => (prev ? { ...prev, startDate: e.target.value } : null))
+              }
+              type="date"
+              className="w-full"
+            />
+          ) : (
+            <span className="text-sm">{formatDate(row.original.startDate)}</span>
+          );
+        },
+      },
+      {
+        accessorKey: 'endDate',
+        header: 'End Date',
+        cell: ({ row, table }) => {
+          const meta = table.options.meta as TableMeta;
+          const isEditingRow = meta.editingRowIndex === row.original.index;
+          return isEditingRow ? (
+            <Input
+              value={meta.editingRowData?.endDate || ''}
+              onChange={(e) =>
+                meta.setEditingRowData((prev) => (prev ? { ...prev, endDate: e.target.value } : null))
+              }
+              type="date"
+              className="w-full"
+            />
+          ) : (
+            <span className="text-sm">{formatDate(row.original.endDate)}</span>
+          );
+        },
+      },
+      {
+        accessorKey: 'contractor',
+        header: 'Contractor',
+        cell: ({ row, table }) => {
+          const meta = table.options.meta as TableMeta;
+          const isEditingRow = meta.editingRowIndex === row.original.index;
+          return isEditingRow ? (
+            <Input
+              value={meta.editingRowData?.contractor || ''}
+              onChange={(e) =>
+                meta.setEditingRowData((prev) => (prev ? { ...prev, contractor: e.target.value } : null))
+              }
+              placeholder="Contractor name"
+              className="w-full"
+            />
+          ) : (
+            <span className="text-sm">{row.original.contractor || 'N/A'}</span>
+          );
+        },
+      },
+      {
+        id: 'actions',
+        header: 'Quick Actions',
+        cell: ({ row, table }) => {
+          const meta = table.options.meta as TableMeta;
+          const isEditingRow = meta.editingRowIndex === row.original.index;
+          return (
+            <div className="flex items-center gap-2">
+              {isEditingRow ? (
+                <>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => meta.handleSaveRow(row.original.index)}
+                    disabled={meta.isSubmitting}
+                    className="h-8 w-8 p-0"
+                  >
+                    <Check className="h-4 w-4 text-emerald-600" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={meta.handleCancelEditRow}
+                    disabled={meta.isSubmitting}
+                    className="h-8 w-8 p-0"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() =>
+                      meta.handleEditRow(row.original.index, meta.sowLineItems[row.original.index])
+                    }
+                    className="h-8 w-8 p-0"
+                  >
+                    <Edit2 className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => meta.handleDeleteRow(row.original.index)}
+                    disabled={meta.isSubmitting}
+                    className="h-8 w-8 p-0"
+                  >
+                    <Trash2 className="h-4 w-4 text-red-500" />
+                  </Button>
+                </>
+              )}
+            </div>
+          );
+        },
+      },
+    ],
+    [] // stable — all mutable values come through meta
+  );
+
+  const table = useReactTable({
+    data: tableRows,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+    state: { columnVisibility },
+    onColumnVisibilityChange: setColumnVisibility,
+    meta: {
+      editingRowIndex,
+      editingRowData,
+      setEditingRowData,
+      handleSaveRow,
+      handleCancelEditRow,
+      handleEditRow,
+      handleDeleteRow,
+      isSubmitting,
+      sowLineItems: sowData?.lineItems ?? [],
+      isDescriptionNarrow,
+      pendingNewRow,
+    } satisfies TableMeta,
+  });
 
   return (
     <>
@@ -336,18 +611,13 @@ export function ScopeOfWorkCard({ isLoading, sowData }: ScopeOfWorkCardProps) {
                 Create Scope of Work
               </Button>
             )}
-            {!isLoading && sowData && !isEditing && !isCreating && (
-              <div className="flex gap-2">
-                <Button size="sm" variant="outline" onClick={handleDownloadPdf} disabled={isDownloadingPdf}>
-                  <Download className="mr-2 h-4 w-4" />
-                  {isDownloadingPdf ? 'Downloading...' : 'View PDF'}
-                </Button>
-                <Button size="sm" variant="outline" onClick={handleEdit}>
-                  Edit
-                </Button>
-              </div>
+            {!isLoading && sowData && !isCreating && (
+              <Button size="sm" variant="outline" onClick={handleDownloadPdf} disabled={isDownloadingPdf}>
+                <Download className="mr-2 h-4 w-4" />
+                {isDownloadingPdf ? 'Downloading...' : 'View PDF'}
+              </Button>
             )}
-            {(isCreating || isEditing) && (
+            {isCreating && (
               <div className="flex gap-2">
                 <Button size="sm" variant="outline" onClick={handleCancel} disabled={isSubmitting}>
                   Cancel
@@ -366,11 +636,11 @@ export function ScopeOfWorkCard({ isLoading, sowData }: ScopeOfWorkCardProps) {
         <CardContent className="p-4">
           {isLoading ? (
             <div className="text-slate-500">Loading scope of work...</div>
-          ) : isCreating || isEditing ? (
+          ) : isCreating ? (
             <form onSubmit={sowForm.handleSubmit(onSubmit)} className="space-y-6">
               <div className="space-y-4">
-                {sowForm.watch('lineItems').map((item, index) => (
-                  <div key={index} className="space-y-3 rounded-md border border-slate-200 p-4">
+                {sowForm.watch('lineItems').map((_item, index) => (
+                  <div key={index} className="space-y-3 rounded-md border border-slate-200">
                     <div className="flex items-start gap-4">
                       <div className="flex-1 space-y-2">
                         <Label htmlFor={`lineItems.${index}.description`} className="text-sm text-slate-500">
@@ -499,9 +769,7 @@ export function ScopeOfWorkCard({ isLoading, sowData }: ScopeOfWorkCardProps) {
                         isAllocation: false,
                       },
                     ],
-                    {
-                      shouldDirty: true,
-                    }
+                    { shouldDirty: true }
                   );
                 }}
               >
@@ -526,212 +794,72 @@ export function ScopeOfWorkCard({ isLoading, sowData }: ScopeOfWorkCardProps) {
             </form>
           ) : sowData ? (
             <div className="space-y-4">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="w-full border-collapse border border-slate-200 text-slate-700">
-                      <th className="px-4 py-3 text-left text-sm font-medium">Description</th>
-                      <th className="px-4 py-3 text-left text-sm font-medium">Price</th>
-                      <th className="px-4 py-3 text-left text-sm font-medium">Start Date</th>
-                      <th className="px-4 py-3 text-left text-sm font-medium">End Date</th>
-                      <th className="px-4 py-3 text-left text-sm font-medium">Contractor</th>
-                      <th className="px-4 py-3 text-left text-sm font-medium">Quick Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {sowData.lineItems.map((item, index) => {
-                      const isEditing = editingRowIndex === index;
-                      return (
-                        <tr key={index} className="border-collapse border border-slate-200">
-                          <td
-                            className="max-w-[200px] border-collapse truncate overflow-hidden border
-                              border-slate-200 px-4 py-3"
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    {table.getHeaderGroups().map((headerGroup) => (
+                      <TableRow key={headerGroup.id}>
+                        {headerGroup.headers.map((header) => (
+                          <TableHead
+                            key={header.id}
+                            ref={header.column.id === 'description' ? descriptionHeaderRef : undefined}
+                            className={
+                              header.column.id === 'description'
+                                ? 'w-2/5'
+                                : header.column.id === 'price'
+                                ? 'min-w-[140px]'
+                                : header.column.id === 'contractor'
+                                ? 'min-w-[140px]'
+                                : ''
+                            }
                           >
-                            {isEditing ? (
-                              <Input
-                                value={editingRowData?.description || ''}
-                                onChange={(e) =>
-                                  setEditingRowData((prev) =>
-                                    prev ? { ...prev, description: e.target.value } : null
-                                  )
-                                }
-                                placeholder="Item description"
-                                className="w-full"
-                              />
-                            ) : (
-                              <span className="max-w-[200px] truncate text-sm text-slate-900">
-                                {item.description}
-                              </span>
-                            )}
-                          </td>
-                          <td className="border-collapse border border-slate-200 px-4 py-3">
-                            {isEditing ? (
-                              <div className="relative">
-                                <span className="absolute top-1/2 left-3 -translate-y-1/2 text-slate-500">
-                                  $
-                                </span>
-                                <Input
-                                  value={editingRowData?.price || ''}
-                                  onChange={(e) =>
-                                    setEditingRowData((prev) =>
-                                      prev ? { ...prev, price: e.target.value } : null
-                                    )
-                                  }
-                                  placeholder="0.00"
-                                  type="text"
-                                  inputMode="decimal"
-                                  className="w-full pl-7"
-                                />
-                              </div>
-                            ) : (
-                              <span className="text-sm text-slate-900">
-                                {item.price !== null && item.price !== undefined
-                                  ? new Intl.NumberFormat('en-US', {
-                                      style: 'currency',
-                                      currency: 'USD',
-                                    }).format(item.price)
-                                  : 'N/A'}
-                                {(item as any).isAllocation && (
-                                  <span className="ml-1 text-xs text-slate-500">(A)</span>
-                                )}
-                              </span>
-                            )}
-                          </td>
-                          <td className="border-collapse border border-slate-200 px-4 py-3">
-                            {isEditing ? (
-                              <Input
-                                value={editingRowData?.startDate || ''}
-                                onChange={(e) =>
-                                  setEditingRowData((prev) =>
-                                    prev ? { ...prev, startDate: e.target.value } : null
-                                  )
-                                }
-                                type="date"
-                                className="w-full"
-                              />
-                            ) : (
-                              <span className="text-sm text-slate-900">
-                                {formatDate(item.startDate || null)}
-                              </span>
-                            )}
-                          </td>
-                          <td className="border-collapse border border-slate-200 px-4 py-3">
-                            {isEditing ? (
-                              <Input
-                                value={editingRowData?.endDate || ''}
-                                onChange={(e) =>
-                                  setEditingRowData((prev) =>
-                                    prev ? { ...prev, endDate: e.target.value } : null
-                                  )
-                                }
-                                type="date"
-                                className="w-full"
-                              />
-                            ) : (
-                              <span className="text-sm text-slate-900">
-                                {formatDate(item.endDate || null)}
-                              </span>
-                            )}
-                          </td>
-                          <td className="border-collapse border border-slate-200 px-4 py-3">
-                            {isEditing ? (
-                              <Input
-                                value={editingRowData?.contractor || ''}
-                                onChange={(e) =>
-                                  setEditingRowData((prev) =>
-                                    prev ? { ...prev, contractor: e.target.value } : null
-                                  )
-                                }
-                                placeholder="Contractor name"
-                                className="w-full"
-                              />
-                            ) : (
-                              <span className="text-sm text-slate-900">{item.contractor || 'N/A'}</span>
-                            )}
-                          </td>
-                          {/* <td className="border-collapse border border-slate-200 px-4 py-3 text-center">
-                          {isEditing ? (
-                            <input
-                              type="checkbox"
-                              checked={editingRowData?.isAllocation ?? false}
-                              onChange={(e) =>
-                                setEditingRowData((prev) =>
-                                  prev ? { ...prev, isAllocation: e.target.checked } : null
-                                )
-                              }
-                              className="h-4 w-4 rounded border-slate-300"
-                            />
-                          ) : (item as any).isAllocation ? (
-                            <span className="text-xs font-medium text-slate-500">(A)</span>
-                          ) : null}
-                        </td> */}
-                          <td className="border-collapse border border-slate-200 px-4 py-3">
-                            <div className="flex items-center gap-2">
-                              {isEditing ? (
-                                <>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() => handleSaveRow(index)}
-                                    disabled={isSubmitting}
-                                    className="h-8 w-8 p-0"
-                                  >
-                                    <Check className="h-4 w-4 text-emerald-600" />
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={handleCancelEditRow}
-                                    disabled={isSubmitting}
-                                    className="h-8 w-8 p-0"
-                                  >
-                                    <X className="h-4 w-4" />
-                                  </Button>
-                                </>
-                              ) : (
-                                <>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() => handleEditRow(index, item)}
-                                    className="h-8 w-8 p-0"
-                                  >
-                                    <Edit2 className="h-4 w-4" />
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() => handleDeleteRow(index)}
-                                    disabled={isSubmitting}
-                                    className="h-8 w-8 p-0"
-                                  >
-                                    <Trash2 className="h-4 w-4 text-red-500" />
-                                  </Button>
-                                </>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
+                            {header.isPlaceholder
+                              ? null
+                              : flexRender(header.column.columnDef.header, header.getContext())}
+                          </TableHead>
+                        ))}
+                      </TableRow>
+                    ))}
+                  </TableHeader>
+                  <TableBody>
+                    {table.getRowModel().rows.map((row) => {
+                      const meta = table.options.meta as TableMeta;
+                      const isTallRow =
+                        meta.editingRowIndex === row.original.index && meta.isDescriptionNarrow;
+                      return (
+                        <TableRow key={row.id} className={isTallRow ? '[&>td]:align-top' : ''}>
+                          {row.getVisibleCells().map((cell) => (
+                            <TableCell key={cell.id}>
+                              {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                            </TableCell>
+                          ))}
+                        </TableRow>
                       );
                     })}
-                    <tr className="bg-blue-50 text-sm font-medium text-blue-800">
-                      <td colSpan={1} className="px-4 py-3 text-sm font-medium text-blue-800">
-                        Total:
-                      </td>
-                      <td className="border-collapse border border-slate-200 px-4 py-3">
-                        {new Intl.NumberFormat('en-US', {
-                          style: 'currency',
-                          currency: 'USD',
-                        }).format(sowData.lineItems.reduce((sum, item) => sum + (item.price || 0), 0))}
-                      </td>
-                      <td className="px-4 py-3">--</td>
-                      <td className="px-4 py-3">--</td>
-                      <td className="px-4 py-3">--</td>
-                      <td className="px-4 py-3"></td>
-                    </tr>
-                  </tbody>
-                </table>
+                  </TableBody>
+                  <TableFooter>
+                    <TableRow className="bg-blue-50 text-sm font-medium text-blue-800">
+                      <TableCell>Total:</TableCell>
+                      <TableCell>
+                        {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(
+                          totalPrice
+                        )}
+                      </TableCell>
+                      {/* Placeholder cells for visible columns after price */}
+                      {table
+                        .getVisibleLeafColumns()
+                        .slice(2)
+                        .map((col) => (
+                          <TableCell key={col.id}>--</TableCell>
+                        ))}
+                    </TableRow>
+                  </TableFooter>
+                </Table>
               </div>
+              <Button type="button" size="sm" onClick={handleAddRow} disabled={editingRowIndex !== null}>
+                <Plus className="mr-2 h-4 w-4" />
+                Add Row
+              </Button>
               {sowData.lineItems.some((item) => (item as any).isAllocation) && (
                 <div className="px-4 pb-2 text-xs text-slate-500">
                   <span className="font-medium">(A)</span> — This line item is an allocation. Cost can be less
