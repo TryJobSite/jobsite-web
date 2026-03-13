@@ -21,6 +21,7 @@ import { Input } from '@/(components)/shadcn/ui/input';
 import { Label } from '@/(components)/shadcn/ui/label';
 import { ChevronRight, Plus } from 'lucide-react';
 import { PageHeader } from '@/(components)/layout/page-header';
+import { paths } from '../../apiDocs';
 
 type BidStatus = 'in-progress' | 'sent-to-client' | 'bid-won' | 'bid-lost';
 
@@ -44,40 +45,43 @@ const bidSchema = z.object({
 
 type BidFormData = z.infer<typeof bidSchema>;
 
-type Bid = {
-  bidId: string;
-  companyId: string;
-  customerId: string;
-  title: string;
-  description: string | null;
-  status: BidStatus;
-  estimatedStartDate: string | null;
-  estimatedEndDate: string | null;
-  price: number | null;
-  addressLine1: string | null;
-  addressLine2: string | null;
-  city: string | null;
-  state: string | null;
-  postalCode: string | null;
-  country: string | null;
-  lineItems: Array<{
-    description: string;
-    price?: number | null;
-    startDate?: string | null;
-    endDate?: string | null;
-    contractor?: string | null;
-  }>;
-  notes: string | null;
-  createdAt: string;
-  updatedAt: string;
-  deletedAt: string | null;
-  customer?: {
-    customerId: string;
-    firstName: string;
-    lastName: string;
-    email: string;
-  };
-};
+type Bid =
+  paths['/bids']['get']['responses']['200']['content']['application/json']['responseObject']['bids'][number];
+
+// type Bid = {
+//   bidId: string;
+//   companyId: string;
+//   customerId: string;
+//   title: string;
+//   description: string | null;
+//   status: BidStatus;
+//   estimatedStartDate: string | null;
+//   estimatedEndDate: string | null;
+//   price: number | null;
+//   addressLine1: string | null;
+//   addressLine2: string | null;
+//   city: string | null;
+//   state: string | null;
+//   postalCode: string | null;
+//   country: string | null;
+//   lineItems: Array<{
+//     description: string;
+//     price?: number | null;
+//     startDate?: string | null;
+//     endDate?: string | null;
+//     contractor?: string | null;
+//   }>;
+//   notes: string | null;
+//   createdAt: string;
+//   updatedAt: string;
+//   deletedAt: string | null;
+//   customer?: {
+//     customerId: string;
+//     firstName: string;
+//     lastName: string;
+//     email: string;
+//   };
+// };
 
 function formatDate(dateString: string | null | undefined): string {
   if (!dateString) return 'Not set';
@@ -332,12 +336,14 @@ function BidsPageInner() {
                         )}
 
                         <div className="space-y-2 text-sm">
-                          {bid.price !== null && (
-                            <div className="flex justify-between">
-                              <span className="text-slate-500">Price:</span>
-                              <span className="font-medium">{formatCurrency(bid.price)}</span>
-                            </div>
-                          )}
+                          <div className="flex justify-between">
+                            <span className="text-slate-500">Price:</span>
+                            <span className="font-medium">
+                              {formatCurrency(
+                                bid.lineItems.reduce((acc, item) => acc + (item.price ?? 0), 0)
+                              )}
+                            </span>
+                          </div>
 
                           {bid.estimatedStartDate && (
                             <div className="flex justify-between">
@@ -422,12 +428,14 @@ function BidsPageInner() {
                         )}
 
                         <div className="space-y-2 text-sm">
-                          {bid.price !== null && (
-                            <div className="flex justify-between">
-                              <span className="text-slate-500">Price:</span>
-                              <span className="font-medium">{formatCurrency(bid.price)}</span>
-                            </div>
-                          )}
+                          <div className="flex justify-between">
+                            <span className="text-slate-500">Price:</span>
+                            <span className="font-medium">
+                              {formatCurrency(
+                                bid.lineItems.reduce((acc, item) => acc + (item.price ?? 0), 0)
+                              )}
+                            </span>
+                          </div>
 
                           {bid.estimatedStartDate && (
                             <div className="flex justify-between">
@@ -512,12 +520,14 @@ function BidsPageInner() {
                         )}
 
                         <div className="space-y-2 text-sm">
-                          {bid.price !== null && (
-                            <div className="flex justify-between">
-                              <span className="text-slate-500">Price:</span>
-                              <span className="font-medium">{formatCurrency(bid.price)}</span>
-                            </div>
-                          )}
+                          <div className="flex justify-between">
+                            <span className="text-slate-500">Price:</span>
+                            <span className="font-medium">
+                              {formatCurrency(
+                                bid.lineItems.reduce((acc, item) => acc + (item.price ?? 0), 0)
+                              )}
+                            </span>
+                          </div>
 
                           {bid.estimatedStartDate && (
                             <div className="flex justify-between">
@@ -602,12 +612,14 @@ function BidsPageInner() {
                         )}
 
                         <div className="space-y-2 text-sm">
-                          {bid.price !== null && (
-                            <div className="flex justify-between">
-                              <span className="text-slate-500">Price:</span>
-                              <span className="font-medium">{formatCurrency(bid.price)}</span>
-                            </div>
-                          )}
+                          <div className="flex justify-between">
+                            <span className="text-slate-500">Price:</span>
+                            <span className="font-medium">
+                              {formatCurrency(
+                                bid.lineItems.reduce((acc, item) => acc + (item.price ?? 0), 0)
+                              )}
+                            </span>
+                          </div>
 
                           {bid.estimatedStartDate && (
                             <div className="flex justify-between">

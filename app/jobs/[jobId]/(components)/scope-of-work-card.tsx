@@ -514,7 +514,7 @@ export function ScopeOfWorkCard({ isLoading, sowData }: ScopeOfWorkCardProps) {
               className="w-full"
             />
           ) : (
-            <span className="text-sm">{row.original.contractor || 'N/A'}</span>
+            <span className="text-sm">{row.original.contractor || '--'}</span>
           );
         },
       },

@@ -656,7 +656,6 @@ export interface paths {
                                     estimatedEndDate: string | null;
                                     actualStartDate: string | null;
                                     actualEndDate: string | null;
-                                    price: number | null;
                                     addressLine1: string | null;
                                     addressLine2: string | null;
                                     city: string | null;
@@ -669,6 +668,7 @@ export interface paths {
                                     createdAt: string;
                                     updatedAt: string;
                                     deletedAt: string | null;
+                                    price: number | null;
                                     customer: {
                                         customerId: string;
                                         companyId: string;
@@ -734,7 +734,6 @@ export interface paths {
                         estimatedStartDate?: string;
                         /** Format: date-time */
                         estimatedEndDate?: string;
-                        price?: number;
                         addressLine1?: string;
                         addressLine2?: string;
                         city?: string;
@@ -771,7 +770,6 @@ export interface paths {
                                     estimatedEndDate: string | null;
                                     actualStartDate: string | null;
                                     actualEndDate: string | null;
-                                    price: number | null;
                                     addressLine1: string | null;
                                     addressLine2: string | null;
                                     city: string | null;
@@ -859,7 +857,6 @@ export interface paths {
                         actualStartDate?: string | null;
                         /** Format: date-time */
                         actualEndDate?: string | null;
-                        price?: number | null;
                         addressLine1?: string | null;
                         addressLine2?: string | null;
                         city?: string | null;
@@ -896,7 +893,6 @@ export interface paths {
                                     estimatedEndDate: string | null;
                                     actualStartDate: string | null;
                                     actualEndDate: string | null;
-                                    price: number | null;
                                     addressLine1: string | null;
                                     addressLine2: string | null;
                                     city: string | null;
@@ -1901,7 +1897,6 @@ export interface paths {
                                     status: "in-progress" | "sent-to-client" | "bid-lost" | "bid-won";
                                     estimatedStartDate: string | null;
                                     estimatedEndDate: string | null;
-                                    price: number | null;
                                     addressLine1: string | null;
                                     addressLine2: string | null;
                                     city: string | null;
@@ -2009,7 +2004,6 @@ export interface paths {
                                     status: "in-progress" | "sent-to-client" | "bid-lost" | "bid-won";
                                     estimatedStartDate: string | null;
                                     estimatedEndDate: string | null;
-                                    price: number | null;
                                     addressLine1: string | null;
                                     addressLine2: string | null;
                                     city: string | null;
@@ -2167,7 +2161,6 @@ export interface paths {
                                     status: "in-progress" | "sent-to-client" | "bid-lost" | "bid-won";
                                     estimatedStartDate: string | null;
                                     estimatedEndDate: string | null;
-                                    price: number | null;
                                     addressLine1: string | null;
                                     addressLine2: string | null;
                                     city: string | null;
@@ -2258,7 +2251,6 @@ export interface paths {
                                     status: "in-progress" | "sent-to-client" | "bid-lost" | "bid-won";
                                     estimatedStartDate: string | null;
                                     estimatedEndDate: string | null;
-                                    price: number | null;
                                     addressLine1: string | null;
                                     addressLine2: string | null;
                                     city: string | null;
@@ -2291,7 +2283,6 @@ export interface paths {
                                     estimatedEndDate: string | null;
                                     actualStartDate: string | null;
                                     actualEndDate: string | null;
-                                    price: number | null;
                                     addressLine1: string | null;
                                     addressLine2: string | null;
                                     city: string | null;

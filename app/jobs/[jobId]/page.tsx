@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useApi } from '@/(hooks)/useApi';
 import { useParams, useRouter } from 'next/navigation';
@@ -8,7 +8,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/(components)/shadcn/ui/button';
-import { ArrowLeft, Settings, FileText, Upload } from 'lucide-react';
+import { ArrowLeft, Settings, Upload } from 'lucide-react';
 import Link from 'next/link';
 import { ScopeOfWorkCard } from './(components)/scope-of-work-card';
 import { ChangeOrdersCard } from './(components)/change-orders-card';
@@ -98,8 +98,6 @@ const documentUploadSchema = z.object({
 type ChangeOrderFormData = z.infer<typeof changeOrderSchema>;
 type JobDetailsFormData = z.infer<typeof jobDetailsSchema>;
 type PaymentDrawFormData = z.infer<typeof paymentDrawSchema>;
-
-type ScopeOfWOrk = ScopeOfWork;
 
 export default function JobDetailPage() {
   const params = useParams();
@@ -218,7 +216,7 @@ export default function JobDetailPage() {
             },
           },
         });
-        return response.data?.responseObject?.scopeOfWork as ScopeOfWOrk | null;
+        return response.data?.responseObject?.scopeOfWork as ScopeOfWork | null;
       } catch (error: any) {
         if (error?.statusCode === 404) {
           return null;
@@ -227,6 +225,12 @@ export default function JobDetailPage() {
       }
     },
   });
+
+  const price = useMemo(() => {
+    return sowData?.lineItems?.reduce((acc, item) => acc + (item.price ?? 0), 0) ?? 0;
+  }, [sowData]);
+
+  console.log({ price });
 
   const { data: changeOrdersData, isLoading: isLoadingChangeOrders } = useQuery({
     queryKey: ['changeOrders', jobId],
@@ -624,7 +628,12 @@ export default function JobDetailPage() {
     photoForm.reset();
   };
 
-  const onSubmitPhoto = async (data: { fileName: string; fileType: string; fileData: string; notes?: string | null }) => {
+  const onSubmitPhoto = async (data: {
+    fileName: string;
+    fileType: string;
+    fileData: string;
+    notes?: string | null;
+  }) => {
     setIsSubmitting(true);
     try {
       await api.PUT('/jobs/clientuploads/{jobId}', {
@@ -674,7 +683,6 @@ export default function JobDetailPage() {
       postalCode: job.postalCode || '',
       country: job.country || '',
       status: job.status,
-      price: formatCurrency(job.price),
     });
   };
 
@@ -754,10 +762,6 @@ export default function JobDetailPage() {
         action={
           <div className="flex items-center gap-2">
             {' '}
-            <Button size="sm" variant="outline" onClick={handleCreateChangeOrder}>
-              <FileText className="mr-2 h-4 w-4" />
-              Create Change Order
-            </Button>
             <Button size="sm" variant="outline" onClick={handleUploadDocument}>
               <Upload className="mr-2 h-4 w-4" />
               Upload Document
@@ -801,7 +805,7 @@ export default function JobDetailPage() {
                 <div className="flex-1">
                   <div className="mb-4 border-l border-slate-200 pl-2">
                     <div className="text-sm text-slate-500">Price</div>
-                    <div>{formatCurrency(job.price)}</div>
+                    <div>{formatCurrency(price)}</div>
                   </div>
                   <div className="border-l border-slate-200 pl-2">
                     <div className="text-sm text-slate-500">Start Date</div>

@@ -76,7 +76,7 @@ export default function CreateCustomerPage() {
     <div className="space-y-6 p-6">
       <Card className="mx-auto max-w-2xl">
         <CardHeader>
-          <CardTitle>Create New Customer</CardTitle>
+          <CardTitle>Create your first customer</CardTitle>
           <CardDescription>Fill in the details to create a new customer.</CardDescription>
         </CardHeader>
         <CardContent>

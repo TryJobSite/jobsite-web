@@ -37,23 +37,29 @@ export function ChangeOrdersCard({ isLoading, changeOrders, onEdit, onCreate }: 
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle>Change Orders</CardTitle>
-          {changeOrders && changeOrders.length > 0 && (
-            <div className="text-sm">
-              <span className="text-slate-500">Total: </span>
-              <span className="text-lg font-bold">
-                {new Intl.NumberFormat('en-US', {
-                  style: 'currency',
-                  currency: 'USD',
-                }).format(
-                  changeOrders.reduce(
-                    (sum, changeOrder) =>
-                      sum + changeOrder.lineItems.reduce((itemSum, item) => itemSum + (item.price || 0), 0),
-                    0
-                  )
-                )}
-              </span>
-            </div>
-          )}
+          <div className="flex items-center gap-3">
+            {changeOrders && changeOrders.length > 0 && (
+              <div className="text-sm">
+                <span className="text-slate-500">Total: </span>
+                <span className="text-lg font-bold">
+                  {new Intl.NumberFormat('en-US', {
+                    style: 'currency',
+                    currency: 'USD',
+                  }).format(
+                    changeOrders.reduce(
+                      (sum, changeOrder) =>
+                        sum + changeOrder.lineItems.reduce((itemSum, item) => itemSum + (item.price || 0), 0),
+                      0
+                    )
+                  )}
+                </span>
+              </div>
+            )}
+            <Button size="sm" onClick={onCreate}>
+              <Plus className="mr-2 h-4 w-4" />
+              Create Change Order
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
@@ -112,12 +118,6 @@ export function ChangeOrdersCard({ isLoading, changeOrders, onEdit, onCreate }: 
                 })}
               </tbody>
             </table>
-            <div className="mt-2 flex justify-start">
-              <Button variant="outline" size="sm" onClick={onCreate}>
-                <Plus className="mr-2 h-4 w-4" />
-                Add Change Order
-              </Button>
-            </div>
             {changeOrders.some((co) => co.lineItems.some((item) => (item as any).isAllocation)) && (
               <div className="mt-2 px-1 pb-1 text-xs text-slate-500">
                 <span className="font-medium">(A)</span> — This line item is an allocation. Cost can be less or

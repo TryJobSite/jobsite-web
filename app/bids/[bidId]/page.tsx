@@ -23,43 +23,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/(components)/shadcn/
 import { BidDetailsUpdateModal } from './(components)/bid-details-update-modal';
 import { BidLineItemsCard } from './(components)/bid-line-items-card';
 import { SendBidEmailModal } from './(components)/send-bid-email-modal';
+import { paths } from '../../../apiDocs';
 
 type BidStatus = 'in-progress' | 'sent-to-client' | 'bid-won' | 'bid-lost';
 
-type Bid = {
-  bidId: string;
-  companyId: string;
-  customerId: string;
-  title: string;
-  description: string | null;
-  status: BidStatus;
-  estimatedStartDate: string | null;
-  estimatedEndDate: string | null;
-  price: number | null;
-  addressLine1: string | null;
-  addressLine2: string | null;
-  city: string | null;
-  state: string | null;
-  postalCode: string | null;
-  country: string | null;
-  lineItems: Array<{
-    description: string;
-    price?: number | null;
-    startDate?: string | null;
-    endDate?: string | null;
-    contractor?: string | null;
-  }>;
-  notes: string | null;
-  createdAt: string;
-  updatedAt: string;
-  deletedAt: string | null;
-  customer?: {
-    customerId: string;
-    firstName: string;
-    lastName: string;
-    email: string;
-  };
-};
+type Bid =
+  paths['/bids']['get']['responses']['200']['content']['application/json']['responseObject']['bids'][number];
 
 function formatDate(dateString: string | null | undefined): string {
   if (!dateString) return 'Not set';
@@ -186,7 +155,6 @@ export default function BidDetailPage() {
         postalCode: bid.postalCode || '',
         country: bid.country || '',
         status: bid.status,
-        price: formatPriceForInput(bid.price),
         estimatedStartDate: formatDateOnlyForInput(bid.estimatedStartDate),
         estimatedEndDate: formatDateOnlyForInput(bid.estimatedEndDate),
         notes: bid.notes || '',
@@ -419,7 +387,9 @@ export default function BidDetailPage() {
                 <div className="flex-1">
                   <div className="mb-4 border-l border-slate-200 pl-2">
                     <div className="text-sm text-slate-500">Price</div>
-                    <div>{formatCurrency(bid.price)}</div>
+                    <div>
+                      {formatCurrency(bid.lineItems.reduce((acc, item) => acc + (item.price ?? 0), 0))}
+                    </div>
                   </div>
                   <div className="border-l border-slate-200 pl-2">
                     <div className="text-sm text-slate-500">Est. Start Date</div>
@@ -450,7 +420,7 @@ export default function BidDetailPage() {
         </Card>
 
         {/* Line Items Card */}
-        <BidLineItemsCard bidId={bidId} bid={bid} />
+        <BidLineItemsCard bidId={bidId} bid={bid} disabled={['bid-won', 'bid-lost'].includes(bid.status)} />
 
         <BidDetailsUpdateModal
           open={isBidDetailsUpdateOpen}

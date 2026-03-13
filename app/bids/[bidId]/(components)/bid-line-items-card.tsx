@@ -65,6 +65,7 @@ type Bid = {
 type BidLineItemsCardProps = {
   bidId: string;
   bid: Bid | null | undefined;
+  disabled: boolean;
 };
 
 function formatDateOnlyForInput(dateStr: string | null | undefined): string {
@@ -80,7 +81,7 @@ function formatDateOnlyForInput(dateStr: string | null | undefined): string {
   }
 }
 
-export function BidLineItemsCard({ bidId, bid }: BidLineItemsCardProps) {
+export function BidLineItemsCard({ bidId, bid, disabled }: BidLineItemsCardProps) {
   const params = useParams();
   const { api } = useApi();
   const queryClient = useQueryClient();
@@ -278,7 +279,7 @@ export function BidLineItemsCard({ bidId, bid }: BidLineItemsCardProps) {
         <div className="flex items-center justify-between">
           <CardTitle>Line Items</CardTitle>
           {!isEditing && (
-            <Button size="sm" variant="outline" onClick={handleEdit}>
+            <Button size="sm" variant="outline" onClick={handleEdit} disabled={disabled}>
               Edit
             </Button>
           )}
@@ -333,15 +334,15 @@ export function BidLineItemsCard({ bidId, bid }: BidLineItemsCardProps) {
                     </div>
                     <div className="flex shrink-0 flex-col items-center gap-1 pt-1">
                       <div className="flex items-center gap-1">
-                        <Label
-                          htmlFor={`lineItems.${index}.isAllocation`}
-                          className="text-sm text-slate-500"
-                        >
+                        <Label htmlFor={`lineItems.${index}.isAllocation`} className="text-sm text-slate-500">
                           Allocation
                         </Label>
                         <span className="group relative cursor-help">
                           <Info className="h-3.5 w-3.5 text-slate-400" />
-                          <span className="absolute bottom-full left-1/2 mb-1 hidden w-48 -translate-x-1/2 rounded bg-slate-800 px-2 py-1 text-xs text-white group-hover:block">
+                          <span
+                            className="absolute bottom-full left-1/2 mb-1 hidden w-48 -translate-x-1/2 rounded
+                              bg-slate-800 px-2 py-1 text-xs text-white group-hover:block"
+                          >
                             Check this box if this line item is an allocation vs a set price
                           </span>
                         </span>
@@ -421,7 +422,14 @@ export function BidLineItemsCard({ bidId, bid }: BidLineItemsCardProps) {
                   'lineItems',
                   [
                     ...currentItems,
-                    { description: '', price: '', startDate: '', endDate: '', contractor: '', isAllocation: false },
+                    {
+                      description: '',
+                      price: '',
+                      startDate: '',
+                      endDate: '',
+                      contractor: '',
+                      isAllocation: false,
+                    },
                   ],
                   {
                     shouldDirty: true,
@@ -482,9 +490,7 @@ export function BidLineItemsCard({ bidId, bid }: BidLineItemsCardProps) {
                             {item.price !== null && item.price !== undefined
                               ? formatCurrency(item.price)
                               : 'N/A'}
-                            {item.isAllocation && (
-                              <span className="ml-1 text-xs text-slate-500">(A)</span>
-                            )}
+                            {item.isAllocation && <span className="ml-1 text-xs text-slate-500">(A)</span>}
                           </span>
                         </td>
                         <td className="border-collapse border border-slate-200 px-4 py-3">
@@ -515,8 +521,8 @@ export function BidLineItemsCard({ bidId, bid }: BidLineItemsCardProps) {
             </div>
             {bid.lineItems.some((item) => item.isAllocation) && (
               <div className="mt-2 px-4 pb-1 text-xs text-slate-500">
-                <span className="font-medium">(A)</span> — This line item is an allocation. Cost can be less or
-                more than the allocation based on materials pricing.
+                <span className="font-medium">(A)</span> — This line item is an allocation. Cost can be less
+                or more than the allocation based on materials pricing.
               </div>
             )}
           </div>

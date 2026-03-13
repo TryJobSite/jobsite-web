@@ -27,6 +27,7 @@ import {
   BreadcrumbItem,
   BreadcrumbList,
 } from '@/(components)/shadcn/ui/breadcrumb';
+import { paths } from '../../apiDocs';
 
 type JobStatus = 'planned' | 'in-progress' | 'completed' | 'cancelled' | 'on-hold';
 
@@ -53,30 +54,8 @@ const jobSchema = z.object({
 
 type JobFormData = z.infer<typeof jobSchema>;
 
-type Job = {
-  jobId: string;
-  companyId: string;
-  customerId: string;
-  jobNumber: string | null;
-  title: string;
-  description: string | null;
-  status: JobStatus;
-  estimatedStartDate: string | null;
-  estimatedEndDate: string | null;
-  actualStartDate: string | null;
-  actualEndDate: string | null;
-  price: number | null;
-  addressLine1: string | null;
-  addressLine2: string | null;
-  city: string | null;
-  state: string | null;
-  postalCode: string | null;
-  country: string | null;
-  metadata: Record<string, unknown>;
-  createdAt: string;
-  updatedAt: string;
-  deletedAt: string | null;
-};
+type Job =
+  paths['/jobs']['get']['responses']['200']['content']['application/json']['responseObject']['jobs'][number];
 
 function formatDate(dateString: string | null | undefined): string {
   if (!dateString) return 'Not set';
@@ -247,7 +226,6 @@ function JobsPageInner() {
           status: data.status,
           estimatedStartDate: formatDateToISO(data.estimatedStartDate),
           estimatedEndDate: formatDateToISO(data.estimatedEndDate),
-          price: data.price ? parseFloat(data.price) : undefined,
           addressLine1: data.addressLine1 || undefined,
           addressLine2: data.addressLine2 || undefined,
           city: data.city || undefined,
@@ -285,7 +263,7 @@ function JobsPageInner() {
         return new Date(dateStr).toISOString();
       };
 
-      const response = await api.PATCH('/jobs/{jobId}', {
+      await api.PATCH('/jobs/{jobId}', {
         params: {
           path: {
             jobId: editingJob.jobId,
@@ -397,12 +375,10 @@ function JobsPageInner() {
                   )}
 
                   <div className="space-y-2 text-sm">
-                    {job.price !== null && (
-                      <div className="flex justify-between">
-                        <span className="text-slate-500">Price:</span>
-                        <span className="font-medium">{formatCurrency(job.price)}</span>
-                      </div>
-                    )}
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">Price:</span>
+                      <span className="font-medium">{formatCurrency(job.price)}</span>
+                    </div>
 
                     {job.estimatedStartDate && (
                       <div className="flex justify-between">
