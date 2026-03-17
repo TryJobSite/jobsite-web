@@ -558,8 +558,8 @@ export default function JobDetailPage() {
           fileType: data.fileType,
           fileData: data.fileData,
           notes: data.notes || null,
-          uploadType: 'document',
-        } as any,
+          uploadType: 'jobDocument',
+        },
       });
       queryClient.invalidateQueries({ queryKey: ['clientUploads', jobId] });
       handleCloseDocumentModal();
