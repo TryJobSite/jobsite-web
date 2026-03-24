@@ -23,6 +23,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/(components)/shadcn/
 import { BidDetailsUpdateModal } from './(components)/bid-details-update-modal';
 import { BidLineItemsCard } from './(components)/bid-line-items-card';
 import { SendBidEmailModal } from './(components)/send-bid-email-modal';
+import { TimelineCard } from '../../jobs/[jobId]/(components)/timeline-card';
 import { paths } from '../../../apiDocs';
 
 type BidStatus = 'in-progress' | 'sent-to-client' | 'bid-won' | 'bid-lost';
@@ -421,6 +422,8 @@ export default function BidDetailPage() {
 
         {/* Line Items Card */}
         <BidLineItemsCard bidId={bidId} bid={bid} disabled={['bid-won', 'bid-lost'].includes(bid.status)} />
+
+        <TimelineCard lineItems={bid.lineItems} isLoading={isLoading} />
 
         <BidDetailsUpdateModal
           open={isBidDetailsUpdateOpen}

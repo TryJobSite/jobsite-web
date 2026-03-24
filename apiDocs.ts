@@ -969,17 +969,22 @@ export interface paths {
                                     scopeOfWorkId: string;
                                     contractorId: string;
                                     jobId: string;
-                                    lineItems: {
-                                        description: string;
-                                        price?: number | null;
-                                        startDate?: string | null;
-                                        endDate?: string | null;
-                                        contractor?: string | null;
-                                        isAllocation: boolean;
-                                    }[];
                                     notes: string | null;
                                     createdAt: string;
                                     updatedAt: string;
+                                    lineItems: {
+                                        sowLineItemId: string;
+                                        scopeOfWorkId: string;
+                                        description: string;
+                                        price: number | null;
+                                        startDate: string | null;
+                                        endDate: string | null;
+                                        contractor: string | null;
+                                        isAllocation: boolean;
+                                        sortOrder: number;
+                                        createdAt: string;
+                                        updatedAt: string;
+                                    }[];
                                 } | null;
                             };
                             statusCode: number;
@@ -1008,6 +1013,7 @@ export interface paths {
                             endDate?: string | null;
                             contractor?: string | null;
                             isAllocation: boolean;
+                            sortOrder?: number;
                         }[];
                         notes?: string;
                     };
@@ -1028,17 +1034,22 @@ export interface paths {
                                     scopeOfWorkId: string;
                                     contractorId: string;
                                     jobId: string;
-                                    lineItems: {
-                                        description: string;
-                                        price?: number | null;
-                                        startDate?: string | null;
-                                        endDate?: string | null;
-                                        contractor?: string | null;
-                                        isAllocation: boolean;
-                                    }[];
                                     notes: string | null;
                                     createdAt: string;
                                     updatedAt: string;
+                                    lineItems: {
+                                        sowLineItemId: string;
+                                        scopeOfWorkId: string;
+                                        description: string;
+                                        price: number | null;
+                                        startDate: string | null;
+                                        endDate: string | null;
+                                        contractor: string | null;
+                                        isAllocation: boolean;
+                                        sortOrder: number;
+                                        createdAt: string;
+                                        updatedAt: string;
+                                    }[];
                                 };
                             };
                             statusCode: number;
@@ -1069,6 +1080,7 @@ export interface paths {
                             endDate?: string | null;
                             contractor?: string | null;
                             isAllocation: boolean;
+                            sortOrder?: number;
                         }[];
                         notes: string | null;
                     };
@@ -1089,17 +1101,22 @@ export interface paths {
                                     scopeOfWorkId: string;
                                     contractorId: string;
                                     jobId: string;
-                                    lineItems: {
-                                        description: string;
-                                        price?: number | null;
-                                        startDate?: string | null;
-                                        endDate?: string | null;
-                                        contractor?: string | null;
-                                        isAllocation: boolean;
-                                    }[];
                                     notes: string | null;
                                     createdAt: string;
                                     updatedAt: string;
+                                    lineItems: {
+                                        sowLineItemId: string;
+                                        scopeOfWorkId: string;
+                                        description: string;
+                                        price: number | null;
+                                        startDate: string | null;
+                                        endDate: string | null;
+                                        contractor: string | null;
+                                        isAllocation: boolean;
+                                        sortOrder: number;
+                                        createdAt: string;
+                                        updatedAt: string;
+                                    }[];
                                 };
                             };
                             statusCode: number;
@@ -1153,6 +1170,59 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/jobs/scopeofwork/reorder/{jobId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    jobId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        lineItems: {
+                            sowLineItemId: string;
+                            sortOrder: number;
+                        }[];
+                    };
+                };
+            };
+            responses: {
+                /** @description Success */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            success: boolean;
+                            message: string;
+                            responseObject: {
+                                success: boolean;
+                            };
+                            statusCode: number;
+                        };
+                    };
+                };
+            };
+        };
         trace?: never;
     };
     "/jobs/changeorders/{jobId}": {
@@ -1903,18 +1973,23 @@ export interface paths {
                                     state: string | null;
                                     postalCode: string | null;
                                     country: string | null;
-                                    lineItems: {
-                                        description: string;
-                                        price?: number | null;
-                                        startDate?: string | null;
-                                        endDate?: string | null;
-                                        contractor?: string | null;
-                                        isAllocation: boolean;
-                                    }[];
                                     notes: string | null;
                                     createdAt: string;
                                     updatedAt: string;
                                     deletedAt: string | null;
+                                    lineItems: {
+                                        bidLineItemId: string;
+                                        bidId: string;
+                                        description: string;
+                                        price: number | null;
+                                        startDate: string | null;
+                                        endDate: string | null;
+                                        contractor: string | null;
+                                        isAllocation: boolean;
+                                        sortOrder: number;
+                                        createdAt: string;
+                                        updatedAt: string;
+                                    }[];
                                     customer: {
                                         customerId: string;
                                         companyId: string;
@@ -1978,6 +2053,7 @@ export interface paths {
                             endDate?: string | null;
                             contractor?: string | null;
                             isAllocation: boolean;
+                            sortOrder?: number;
                         }[];
                         notes?: string;
                     };
@@ -2010,18 +2086,23 @@ export interface paths {
                                     state: string | null;
                                     postalCode: string | null;
                                     country: string | null;
-                                    lineItems: {
-                                        description: string;
-                                        price?: number | null;
-                                        startDate?: string | null;
-                                        endDate?: string | null;
-                                        contractor?: string | null;
-                                        isAllocation: boolean;
-                                    }[];
                                     notes: string | null;
                                     createdAt: string;
                                     updatedAt: string;
                                     deletedAt: string | null;
+                                    lineItems: {
+                                        bidLineItemId: string;
+                                        bidId: string;
+                                        description: string;
+                                        price: number | null;
+                                        startDate: string | null;
+                                        endDate: string | null;
+                                        contractor: string | null;
+                                        isAllocation: boolean;
+                                        sortOrder: number;
+                                        createdAt: string;
+                                        updatedAt: string;
+                                    }[];
                                     customer: {
                                         customerId: string;
                                         companyId: string;
@@ -2135,6 +2216,7 @@ export interface paths {
                             endDate?: string | null;
                             contractor?: string | null;
                             isAllocation: boolean;
+                            sortOrder?: number;
                         }[];
                         notes?: string | null;
                     };
@@ -2167,18 +2249,23 @@ export interface paths {
                                     state: string | null;
                                     postalCode: string | null;
                                     country: string | null;
-                                    lineItems: {
-                                        description: string;
-                                        price?: number | null;
-                                        startDate?: string | null;
-                                        endDate?: string | null;
-                                        contractor?: string | null;
-                                        isAllocation: boolean;
-                                    }[];
                                     notes: string | null;
                                     createdAt: string;
                                     updatedAt: string;
                                     deletedAt: string | null;
+                                    lineItems: {
+                                        bidLineItemId: string;
+                                        bidId: string;
+                                        description: string;
+                                        price: number | null;
+                                        startDate: string | null;
+                                        endDate: string | null;
+                                        contractor: string | null;
+                                        isAllocation: boolean;
+                                        sortOrder: number;
+                                        createdAt: string;
+                                        updatedAt: string;
+                                    }[];
                                     customer: {
                                         customerId: string;
                                         companyId: string;
@@ -2202,6 +2289,59 @@ export interface paths {
                                         deletedAt: string | null;
                                     };
                                 };
+                            };
+                            statusCode: number;
+                        };
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
+    "/bids/reorder/{bidId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    bidId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        lineItems: {
+                            bidLineItemId: string;
+                            sortOrder: number;
+                        }[];
+                    };
+                };
+            };
+            responses: {
+                /** @description Success */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            success: boolean;
+                            message: string;
+                            responseObject: {
+                                success: boolean;
                             };
                             statusCode: number;
                         };
@@ -2257,14 +2397,6 @@ export interface paths {
                                     state: string | null;
                                     postalCode: string | null;
                                     country: string | null;
-                                    lineItems: {
-                                        description: string;
-                                        price?: number | null;
-                                        startDate?: string | null;
-                                        endDate?: string | null;
-                                        contractor?: string | null;
-                                        isAllocation: boolean;
-                                    }[];
                                     notes: string | null;
                                     createdAt: string;
                                     updatedAt: string;
@@ -2322,17 +2454,22 @@ export interface paths {
                                     scopeOfWorkId: string;
                                     contractorId: string;
                                     jobId: string;
-                                    lineItems: {
-                                        description: string;
-                                        price?: number | null;
-                                        startDate?: string | null;
-                                        endDate?: string | null;
-                                        contractor?: string | null;
-                                        isAllocation: boolean;
-                                    }[];
                                     notes: string | null;
                                     createdAt: string;
                                     updatedAt: string;
+                                    lineItems: {
+                                        sowLineItemId: string;
+                                        scopeOfWorkId: string;
+                                        description: string;
+                                        price: number | null;
+                                        startDate: string | null;
+                                        endDate: string | null;
+                                        contractor: string | null;
+                                        isAllocation: boolean;
+                                        sortOrder: number;
+                                        createdAt: string;
+                                        updatedAt: string;
+                                    }[];
                                 };
                             };
                             statusCode: number;

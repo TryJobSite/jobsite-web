@@ -12,7 +12,24 @@ import {
   getCoreRowModel,
   useReactTable,
   VisibilityState,
+  Row,
+  Table as TanTable,
 } from '@tanstack/react-table';
+import {
+  DndContext,
+  DragEndEvent,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+  arrayMove,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { Card, CardContent, CardHeader, CardTitle } from '@/(components)/shadcn/ui/card';
 import { Dialog, DialogContent } from '@/(components)/shadcn/ui/dialog';
 import { Button } from '@/(components)/shadcn/ui/button';
@@ -27,7 +44,7 @@ import {
   TableRow,
   TableFooter,
 } from '@/(components)/shadcn/ui/table';
-import { Plus, Trash2, Edit2, Check, X, Info, Download } from 'lucide-react';
+import { Plus, Trash2, Edit2, Check, X, Info, Download, GripVertical } from 'lucide-react';
 import { useApi } from '@/(hooks)/useApi';
 import { ScopeOfWork } from './types';
 import { formatDate, formatDateOnlyForInput } from './utils';
@@ -58,6 +75,7 @@ type EditingRowData = {
 };
 
 type LineItemRow = {
+  id: string;
   index: number;
   description: string;
   price: number | null;
@@ -85,6 +103,50 @@ type ScopeOfWorkCardProps = {
   isLoading: boolean;
   sowData: ScopeOfWork | null | undefined;
 };
+
+function SortableTableRow({
+  row,
+  table,
+}: {
+  row: Row<LineItemRow>;
+  table: TanTable<LineItemRow>;
+}) {
+  const meta = table.options.meta as TableMeta;
+  const isEditingRow = meta.editingRowIndex === row.original.index;
+  const isTallRow = isEditingRow && meta.isDescriptionNarrow;
+
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: row.original.id,
+    disabled: isEditingRow || meta.editingRowIndex !== null,
+  });
+
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <TableRow ref={setNodeRef} style={style} className={isTallRow ? '[&>td]:align-top' : ''}>
+      <TableCell className="w-8 px-2">
+        {!isEditingRow && meta.editingRowIndex === null && (
+          <button
+            {...attributes}
+            {...listeners}
+            className="cursor-grab touch-none text-slate-300 hover:text-slate-500 active:cursor-grabbing"
+          >
+            <GripVertical className="h-4 w-4" />
+          </button>
+        )}
+      </TableCell>
+      {row.getVisibleCells().map((cell) => (
+        <TableCell key={cell.id}>
+          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+        </TableCell>
+      ))}
+    </TableRow>
+  );
+}
 
 export function ScopeOfWorkCard({ isLoading, sowData }: ScopeOfWorkCardProps) {
   console.log({ sowData });
@@ -269,6 +331,33 @@ export function ScopeOfWorkCard({ isLoading, sowData }: ScopeOfWorkCardProps) {
     setPendingNewRow(false);
   };
 
+  const sensors = useSensors(useSensor(PointerSensor));
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = orderedRows.findIndex((r) => r.id === active.id);
+    const newIndex = orderedRows.findIndex((r) => r.id === over.id);
+    const newOrder = arrayMove(orderedRows, oldIndex, newIndex);
+    setOrderedRows(newOrder);
+
+    try {
+      await api.PATCH('/jobs/scopeofwork/reorder/{jobId}', {
+        params: { path: { jobId } },
+        body: {
+          lineItems: newOrder
+            .filter((r) => r.id !== 'pending-new')
+            .map((r, i) => ({ sowLineItemId: r.id, sortOrder: i + 1 })),
+        },
+      });
+      queryClient.invalidateQueries({ queryKey: ['scopeOfWork', jobId] });
+    } catch (error) {
+      console.error('Reorder error:', error);
+      setOrderedRows(orderedRows); // revert on error
+    }
+  };
+
   const handleSaveRow = async (index: number) => {
     if (!editingRowData || !sowData) return;
 
@@ -346,6 +435,7 @@ export function ScopeOfWorkCard({ isLoading, sowData }: ScopeOfWorkCardProps) {
   // Build row data for the table
   const tableRows: LineItemRow[] = useMemo(() => {
     const rows = (sowData?.lineItems ?? []).map((item, index) => ({
+      id: (item as any).sowLineItemId as string,
       index,
       description: item.description,
       price: item.price ?? null,
@@ -356,6 +446,7 @@ export function ScopeOfWorkCard({ isLoading, sowData }: ScopeOfWorkCardProps) {
     }));
     if (pendingNewRow) {
       rows.push({
+        id: 'pending-new',
         index: rows.length,
         description: '',
         price: null,
@@ -367,6 +458,11 @@ export function ScopeOfWorkCard({ isLoading, sowData }: ScopeOfWorkCardProps) {
     }
     return rows;
   }, [sowData, pendingNewRow]);
+
+  const [orderedRows, setOrderedRows] = useState<LineItemRow[]>(tableRows);
+  useEffect(() => {
+    setOrderedRows(tableRows);
+  }, [tableRows]);
 
   const totalPrice = tableRows.reduce((sum, row) => sum + (row.price ?? 0), 0);
 
@@ -579,7 +675,7 @@ export function ScopeOfWorkCard({ isLoading, sowData }: ScopeOfWorkCardProps) {
   );
 
   const table = useReactTable({
-    data: tableRows,
+    data: orderedRows,
     columns,
     getCoreRowModel: getCoreRowModel(),
     state: { columnVisibility },
@@ -799,6 +895,7 @@ export function ScopeOfWorkCard({ isLoading, sowData }: ScopeOfWorkCardProps) {
                   <TableHeader>
                     {table.getHeaderGroups().map((headerGroup) => (
                       <TableRow key={headerGroup.id}>
+                        <TableHead className="w-8 px-2" />
                         {headerGroup.headers.map((header) => (
                           <TableHead
                             key={header.id}
@@ -822,23 +919,20 @@ export function ScopeOfWorkCard({ isLoading, sowData }: ScopeOfWorkCardProps) {
                     ))}
                   </TableHeader>
                   <TableBody>
-                    {table.getRowModel().rows.map((row) => {
-                      const meta = table.options.meta as TableMeta;
-                      const isTallRow =
-                        meta.editingRowIndex === row.original.index && meta.isDescriptionNarrow;
-                      return (
-                        <TableRow key={row.id} className={isTallRow ? '[&>td]:align-top' : ''}>
-                          {row.getVisibleCells().map((cell) => (
-                            <TableCell key={cell.id}>
-                              {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                            </TableCell>
-                          ))}
-                        </TableRow>
-                      );
-                    })}
+                    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                      <SortableContext
+                        items={orderedRows.map((r) => r.id)}
+                        strategy={verticalListSortingStrategy}
+                      >
+                        {table.getRowModel().rows.map((row) => (
+                          <SortableTableRow key={row.id} row={row} table={table} />
+                        ))}
+                      </SortableContext>
+                    </DndContext>
                   </TableBody>
                   <TableFooter>
                     <TableRow className="bg-blue-50 text-sm font-medium text-blue-800">
+                      <TableCell />
                       <TableCell>Total:</TableCell>
                       <TableCell>
                         {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(

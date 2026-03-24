@@ -1,13 +1,15 @@
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/(components)/shadcn/ui/card';
-import { ScopeOfWork } from './types';
-import { formatDate } from './utils';
+
+type LineItem = {
+  description: string;
+  startDate?: string | null;
+  endDate?: string | null;
+};
 
 type TimelineCardProps = {
-  sowData: ScopeOfWork | null | undefined;
-  changeOrders?: any[] | undefined;
-  paymentDraws?: any[] | undefined;
+  lineItems: LineItem[] | null | undefined;
   isLoading: boolean;
 };
 
@@ -23,7 +25,7 @@ type TimelineLineItem = {
   plannedEnd?: Date | null;
 };
 
-export function TimelineCard({ sowData, isLoading }: TimelineCardProps) {
+export function TimelineCard({ lineItems, isLoading }: TimelineCardProps) {
   if (isLoading) {
     return (
       <Card>
@@ -37,8 +39,7 @@ export function TimelineCard({ sowData, isLoading }: TimelineCardProps) {
     );
   }
 
-  // Only use scope of work line items
-  if (!sowData?.lineItems || sowData.lineItems.length === 0) {
+  if (!lineItems || lineItems.length === 0) {
     return (
       <Card>
         <CardHeader>
@@ -57,7 +58,7 @@ export function TimelineCard({ sowData, isLoading }: TimelineCardProps) {
   now.setHours(0, 0, 0, 0);
 
   // Build line items with status
-  const lineItems: TimelineLineItem[] = sowData.lineItems.map((item, index) => {
+  const timelineItems: TimelineLineItem[] = lineItems.map((item, index) => {
     const startDate = item.startDate ? new Date(item.startDate) : null;
     const endDate = item.endDate ? new Date(item.endDate) : null;
 
@@ -98,7 +99,7 @@ export function TimelineCard({ sowData, isLoading }: TimelineCardProps) {
   });
 
   // Calculate min and max dates from line items only
-  const allDates = lineItems
+  const allDates = timelineItems
     .flatMap((item) => {
       const dates: Date[] = [];
       if (item.startDate) dates.push(item.startDate);
@@ -224,7 +225,7 @@ export function TimelineCard({ sowData, isLoading }: TimelineCardProps) {
             {/* Header spacer */}
             <div className="mb-2 border-b border-slate-200" style={{ minHeight: '28px' }}></div>
             {/* Line item labels */}
-            {lineItems.map((item) => (
+            {timelineItems.map((item) => (
               <div
                 key={item.id}
                 className="border-b border-slate-200 bg-white px-3 py-3 text-sm"
@@ -266,7 +267,7 @@ export function TimelineCard({ sowData, isLoading }: TimelineCardProps) {
 
                 {/* Line items */}
                 <div className="relative">
-                  {lineItems.map((item) => {
+                  {timelineItems.map((item) => {
                     const cellRange = getCellRange(item.startDate, item.endDate);
                     const isPlanned = item.status === 'planned';
 
