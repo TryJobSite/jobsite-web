@@ -15,20 +15,8 @@ import {
   Row,
   Table as TanTable,
 } from '@tanstack/react-table';
-import {
-  DndContext,
-  DragEndEvent,
-  closestCenter,
-  PointerSensor,
-  useSensor,
-  useSensors,
-} from '@dnd-kit/core';
-import {
-  SortableContext,
-  useSortable,
-  verticalListSortingStrategy,
-  arrayMove,
-} from '@dnd-kit/sortable';
+import { DndContext, DragEndEvent, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Card, CardContent, CardHeader, CardTitle } from '@/(components)/shadcn/ui/card';
 import { Dialog, DialogContent } from '@/(components)/shadcn/ui/dialog';
@@ -56,6 +44,7 @@ const lineItemSchema = z.object({
   endDate: z.string().optional(),
   contractor: z.string().optional(),
   isAllocation: z.boolean().optional(),
+  status: z.enum(['not_started', 'started', 'completed']).optional(),
 });
 
 const scopeOfWorkSchema = z.object({
@@ -72,6 +61,7 @@ type EditingRowData = {
   endDate?: string;
   contractor?: string;
   isAllocation?: boolean;
+  status?: 'not_started' | 'started' | 'completed';
 };
 
 type LineItemRow = {
@@ -83,6 +73,7 @@ type LineItemRow = {
   endDate: string | null;
   contractor: string | null;
   isAllocation: boolean;
+  status: 'not_started' | 'started' | 'completed';
 };
 
 type TableMeta = {
@@ -94,7 +85,7 @@ type TableMeta = {
   handleEditRow: (index: number, item: any) => void;
   handleDeleteRow: (index: number) => Promise<void>;
   isSubmitting: boolean;
-  sowLineItems: any[];
+  sowLineItems: NonNullable<ScopeOfWork>['lineItems'];
   isDescriptionNarrow: boolean;
   pendingNewRow: boolean;
 };
@@ -104,13 +95,7 @@ type ScopeOfWorkCardProps = {
   sowData: ScopeOfWork | null | undefined;
 };
 
-function SortableTableRow({
-  row,
-  table,
-}: {
-  row: Row<LineItemRow>;
-  table: TanTable<LineItemRow>;
-}) {
+function SortableTableRow({ row, table }: { row: Row<LineItemRow>; table: TanTable<LineItemRow> }) {
   const meta = table.options.meta as TableMeta;
   const isEditingRow = meta.editingRowIndex === row.original.index;
   const isTallRow = isEditingRow && meta.isDescriptionNarrow;
@@ -140,16 +125,13 @@ function SortableTableRow({
         )}
       </TableCell>
       {row.getVisibleCells().map((cell) => (
-        <TableCell key={cell.id}>
-          {flexRender(cell.column.columnDef.cell, cell.getContext())}
-        </TableCell>
+        <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
       ))}
     </TableRow>
   );
 }
 
 export function ScopeOfWorkCard({ isLoading, sowData }: ScopeOfWorkCardProps) {
-  console.log({ sowData });
   const params = useParams();
   const { api } = useApi();
   const queryClient = useQueryClient();
@@ -196,8 +178,19 @@ export function ScopeOfWorkCard({ isLoading, sowData }: ScopeOfWorkCardProps) {
             endDate: item.endDate ? formatDateOnlyForInput(item.endDate) : '',
             contractor: item.contractor || '',
             isAllocation: (item as any).isAllocation ?? false,
+            status: item.status ?? 'not_started',
           }))
-        : [{ description: '', price: '', startDate: '', endDate: '', contractor: '', isAllocation: false }],
+        : [
+            {
+              description: '',
+              price: '',
+              startDate: '',
+              endDate: '',
+              contractor: '',
+              isAllocation: false,
+              status: 'not_started' as const,
+            },
+          ],
       notes: sowData?.notes || '',
     },
   });
@@ -206,7 +199,15 @@ export function ScopeOfWorkCard({ isLoading, sowData }: ScopeOfWorkCardProps) {
     setIsCreating(true);
     sowForm.reset({
       lineItems: [
-        { description: '', price: '', startDate: '', endDate: '', contractor: '', isAllocation: false },
+        {
+          description: '',
+          price: '',
+          startDate: '',
+          endDate: '',
+          contractor: '',
+          isAllocation: false,
+          status: 'not_started',
+        },
       ],
       notes: '',
     });
@@ -268,24 +269,26 @@ export function ScopeOfWorkCard({ isLoading, sowData }: ScopeOfWorkCardProps) {
         return new Date(dateStr + 'T00:00:00').toISOString();
       };
 
-      const lineItems = data.lineItems.map((item) => ({
+      const lineItems = data.lineItems.map((item, idx) => ({
         description: item.description,
         price: item.price ? parseFloat(item.price) : null,
         startDate: formatDateToISO(item.startDate),
         endDate: formatDateToISO(item.endDate),
         contractor: item.contractor || null,
         isAllocation: item.isAllocation ?? false,
+        status: item.status ?? 'not_started',
+        sortOrder: idx + 1,
       }));
 
       if (isCreating) {
         await api.POST('/jobs/scopeofwork/{jobId}', {
           params: { path: { jobId } },
-          body: { lineItems, notes: data.notes || undefined } as any,
+          body: { lineItems, notes: data.notes || undefined },
         });
       } else {
         await api.PATCH('/jobs/scopeofwork/{jobId}', {
           params: { path: { jobId } },
-          body: { lineItems, notes: data.notes || null } as any,
+          body: { lineItems, notes: data.notes || null },
         });
       }
       queryClient.invalidateQueries({ queryKey: ['scopeOfWork', jobId] });
@@ -307,6 +310,7 @@ export function ScopeOfWorkCard({ isLoading, sowData }: ScopeOfWorkCardProps) {
       endDate: item.endDate ? formatDateOnlyForInput(item.endDate) : '',
       contractor: item.contractor || '',
       isAllocation: (item as any).isAllocation ?? false,
+      status: item.status ?? 'not_started',
     });
   };
 
@@ -322,6 +326,7 @@ export function ScopeOfWorkCard({ isLoading, sowData }: ScopeOfWorkCardProps) {
       endDate: '',
       contractor: '',
       isAllocation: false,
+      status: 'not_started',
     });
   };
 
@@ -371,6 +376,7 @@ export function ScopeOfWorkCard({ isLoading, sowData }: ScopeOfWorkCardProps) {
             endDate: item.endDate ? formatDateOnlyForInput(item.endDate) : '',
             contractor: item.contractor || '',
             isAllocation: (item as any).isAllocation ?? false,
+            status: item.status ?? 'not_started',
           }));
 
     const updatedLineItems = [...currentLineItems];
@@ -381,6 +387,7 @@ export function ScopeOfWorkCard({ isLoading, sowData }: ScopeOfWorkCardProps) {
       endDate: editingRowData.endDate || '',
       contractor: editingRowData.contractor || '',
       isAllocation: editingRowData.isAllocation ?? false,
+      status: editingRowData.status ?? 'not_started',
     };
 
     sowForm.setValue('lineItems', updatedLineItems, { shouldDirty: true });
@@ -403,6 +410,7 @@ export function ScopeOfWorkCard({ isLoading, sowData }: ScopeOfWorkCardProps) {
             endDate: item.endDate ? formatDateOnlyForInput(item.endDate) : '',
             contractor: item.contractor || '',
             isAllocation: (item as any).isAllocation ?? false,
+            status: item.status ?? 'not_started',
           }));
 
     const updatedLineItems = currentLineItems.filter((_, i) => i !== index);
@@ -426,6 +434,7 @@ export function ScopeOfWorkCard({ isLoading, sowData }: ScopeOfWorkCardProps) {
           endDate: item.endDate ? formatDateOnlyForInput(item.endDate) : '',
           contractor: item.contractor || '',
           isAllocation: (item as any).isAllocation ?? false,
+          status: item.status ?? 'not_started',
         })),
         notes: sowData.notes || '',
       });
@@ -443,6 +452,7 @@ export function ScopeOfWorkCard({ isLoading, sowData }: ScopeOfWorkCardProps) {
       endDate: item.endDate ?? null,
       contractor: item.contractor ?? null,
       isAllocation: (item as any).isAllocation ?? false,
+      status: item.status ?? 'not_started',
     }));
     if (pendingNewRow) {
       rows.push({
@@ -454,6 +464,7 @@ export function ScopeOfWorkCard({ isLoading, sowData }: ScopeOfWorkCardProps) {
         endDate: null,
         contractor: null,
         isAllocation: false,
+        status: 'not_started' as const,
       });
     }
     return rows;
@@ -611,6 +622,38 @@ export function ScopeOfWorkCard({ isLoading, sowData }: ScopeOfWorkCardProps) {
             />
           ) : (
             <span className="text-sm">{row.original.contractor || '--'}</span>
+          );
+        },
+      },
+      {
+        accessorKey: 'status',
+        header: 'Status',
+        cell: ({ row, table }) => {
+          const meta = table.options.meta as TableMeta;
+          const isEditingRow = meta.editingRowIndex === row.original.index;
+          const statusLabels: Record<string, string> = {
+            not_started: 'Not Started',
+            started: 'In Progress',
+            completed: 'Completed',
+          };
+          return isEditingRow ? (
+            <select
+              value={meta.editingRowData?.status ?? 'not_started'}
+              onChange={(e) =>
+                meta.setEditingRowData((prev) =>
+                  prev ? { ...prev, status: e.target.value as EditingRowData['status'] } : null
+                )
+              }
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm
+                ring-offset-background focus-visible:ring-2 focus-visible:ring-ring
+                focus-visible:ring-offset-2 focus-visible:outline-none"
+            >
+              <option value="not_started">Not Started</option>
+              <option value="started">In Progress</option>
+              <option value="completed">Completed</option>
+            </select>
+          ) : (
+            <span className="text-sm">{statusLabels[row.original.status ?? 'not_started'] ?? '--'}</span>
           );
         },
       },
@@ -810,7 +853,7 @@ export function ScopeOfWorkCard({ isLoading, sowData }: ScopeOfWorkCardProps) {
                         </Button>
                       )}
                     </div>
-                    <div className="grid grid-cols-3 gap-3">
+                    <div className="grid grid-cols-4 gap-3">
                       <div className="space-y-2">
                         <Label htmlFor={`lineItems.${index}.startDate`} className="text-sm text-slate-500">
                           Start Date
@@ -841,6 +884,22 @@ export function ScopeOfWorkCard({ isLoading, sowData }: ScopeOfWorkCardProps) {
                           placeholder="Contractor name"
                         />
                       </div>
+                      <div className="space-y-2">
+                        <Label htmlFor={`lineItems.${index}.status`} className="text-sm text-slate-500">
+                          Status
+                        </Label>
+                        <select
+                          id={`lineItems.${index}.status`}
+                          {...sowForm.register(`lineItems.${index}.status`)}
+                          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm
+                            ring-offset-background focus-visible:ring-2 focus-visible:ring-ring
+                            focus-visible:ring-offset-2 focus-visible:outline-none"
+                        >
+                          <option value="not_started">Not Started</option>
+                          <option value="started">In Progress</option>
+                          <option value="completed">Completed</option>
+                        </select>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -863,6 +922,7 @@ export function ScopeOfWorkCard({ isLoading, sowData }: ScopeOfWorkCardProps) {
                         endDate: '',
                         contractor: '',
                         isAllocation: false,
+                        status: 'not_started' as const,
                       },
                     ],
                     { shouldDirty: true }
@@ -902,7 +962,7 @@ export function ScopeOfWorkCard({ isLoading, sowData }: ScopeOfWorkCardProps) {
                             ref={header.column.id === 'description' ? descriptionHeaderRef : undefined}
                             className={
                               header.column.id === 'description'
-                                ? 'w-2/5'
+                                ? 'max-w-[350px]'
                                 : header.column.id === 'price'
                                 ? 'min-w-[140px]'
                                 : header.column.id === 'contractor'
@@ -919,7 +979,11 @@ export function ScopeOfWorkCard({ isLoading, sowData }: ScopeOfWorkCardProps) {
                     ))}
                   </TableHeader>
                   <TableBody>
-                    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                    <DndContext
+                      sensors={sensors}
+                      collisionDetection={closestCenter}
+                      onDragEnd={handleDragEnd}
+                    >
                       <SortableContext
                         items={orderedRows.map((r) => r.id)}
                         strategy={verticalListSortingStrategy}

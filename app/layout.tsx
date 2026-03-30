@@ -16,7 +16,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           height: '100vh',
           backgroundColor: 'white',
           width: '100vw',
-          maxWidth: '1440px',
+          maxWidth: '1680px',
           margin: '0 auto',
         }}
       >

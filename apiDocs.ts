@@ -981,6 +981,8 @@ export interface paths {
                                         endDate: string | null;
                                         contractor: string | null;
                                         isAllocation: boolean;
+                                        /** @enum {string} */
+                                        status: "not_started" | "started" | "completed";
                                         sortOrder: number;
                                         createdAt: string;
                                         updatedAt: string;
@@ -1007,13 +1009,15 @@ export interface paths {
                 content: {
                     "application/json": {
                         lineItems: {
+                            sortOrder: number;
                             description: string;
-                            price?: number | null;
-                            startDate?: string | null;
-                            endDate?: string | null;
-                            contractor?: string | null;
+                            price: number | null;
+                            startDate: string | null;
+                            endDate: string | null;
+                            contractor: string | null;
                             isAllocation: boolean;
-                            sortOrder?: number;
+                            /** @enum {string} */
+                            status: "not_started" | "started" | "completed";
                         }[];
                         notes?: string;
                     };
@@ -1046,6 +1050,8 @@ export interface paths {
                                         endDate: string | null;
                                         contractor: string | null;
                                         isAllocation: boolean;
+                                        /** @enum {string} */
+                                        status: "not_started" | "started" | "completed";
                                         sortOrder: number;
                                         createdAt: string;
                                         updatedAt: string;
@@ -1074,13 +1080,15 @@ export interface paths {
                 content: {
                     "application/json": {
                         lineItems: {
+                            sortOrder: number;
                             description: string;
-                            price?: number | null;
-                            startDate?: string | null;
-                            endDate?: string | null;
-                            contractor?: string | null;
+                            price: number | null;
+                            startDate: string | null;
+                            endDate: string | null;
+                            contractor: string | null;
                             isAllocation: boolean;
-                            sortOrder?: number;
+                            /** @enum {string} */
+                            status: "not_started" | "started" | "completed";
                         }[];
                         notes: string | null;
                     };
@@ -1113,6 +1121,8 @@ export interface paths {
                                         endDate: string | null;
                                         contractor: string | null;
                                         isAllocation: boolean;
+                                        /** @enum {string} */
+                                        status: "not_started" | "started" | "completed";
                                         sortOrder: number;
                                         createdAt: string;
                                         updatedAt: string;
@@ -2466,6 +2476,8 @@ export interface paths {
                                         endDate: string | null;
                                         contractor: string | null;
                                         isAllocation: boolean;
+                                        /** @enum {string} */
+                                        status: "not_started" | "started" | "completed";
                                         sortOrder: number;
                                         createdAt: string;
                                         updatedAt: string;
