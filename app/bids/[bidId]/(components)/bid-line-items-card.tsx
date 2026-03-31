@@ -41,8 +41,16 @@ import {
   TableRow,
   TableFooter,
 } from '@/(components)/shadcn/ui/table';
-import { Plus, Trash2, Edit2, Check, X, GripVertical } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/(components)/shadcn/ui/dialog';
+import { Plus, Trash2, Edit2, Check, X, GripVertical, FileText, Printer } from 'lucide-react';
 import { useApi } from '@/(hooks)/useApi';
+import { useMe } from '@/(hooks)/useMe';
 
 function formatDate(dateString: string | null | undefined): string {
   if (!dateString) return 'Not set';
@@ -97,7 +105,18 @@ type BidLineItem = {
 
 type Bid = {
   bidId: string;
+  title?: string | null;
+  description?: string | null;
   lineItems: BidLineItem[];
+  customer?: { firstName: string; lastName: string } | null;
+  addressLine1?: string | null;
+  addressLine2?: string | null;
+  city?: string | null;
+  state?: string | null;
+  postalCode?: string | null;
+  estimatedStartDate?: string | null;
+  estimatedEndDate?: string | null;
+  notes?: string | null;
 };
 
 type BidLineItemsCardProps = {
@@ -188,8 +207,12 @@ function SortableTableRow({
 export function BidLineItemsCard({ bidId, bid, disabled }: BidLineItemsCardProps) {
   const { api } = useApi();
   const queryClient = useQueryClient();
+  const { me } = useMe();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [pdfModalOpen, setPdfModalOpen] = useState(false);
+  const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
   const [editingRowIndex, setEditingRowIndex] = useState<number | null>(null);
   const [editingRowData, setEditingRowData] = useState<EditingRowData | null>(null);
   const [pendingNewRow, setPendingNewRow] = useState(false);
@@ -656,21 +679,142 @@ export function BidLineItemsCard({ bidId, bid, disabled }: BidLineItemsCardProps
     } satisfies TableMeta,
   });
 
+  const buildPdfHtml = () => {
+    if (!bid) return '';
+
+    const companyName = me?.company?.companyName ?? '';
+
+    const fmtDate = (d: string | null | undefined) => {
+      if (!d) return 'N/A';
+      return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    };
+
+    const fmtCurrency = (n: number | null | undefined) => {
+      if (n === null || n === undefined) return 'N/A';
+      return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n);
+    };
+
+    const address = [bid.addressLine1, bid.addressLine2, bid.city, bid.state, bid.postalCode]
+      .filter(Boolean)
+      .join(', ');
+
+    const hasAllocations = orderedRows.some((r) => r.isAllocation);
+    const total = orderedRows.reduce((sum, r) => sum + (r.price ?? 0), 0);
+
+    const rowsHtml = orderedRows
+      .map(
+        (r) => `
+        <tr>
+          <td>${r.description}</td>
+          <td style="text-align:right">${r.price !== null ? fmtCurrency(r.price) + (r.isAllocation ? ' (A)' : '') : 'N/A'}</td>
+          <td>${fmtDate(r.startDate)}</td>
+          <td>${fmtDate(r.endDate)}</td>
+          <td>${r.contractor || 'N/A'}</td>
+        </tr>`
+      )
+      .join('');
+
+    return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Statement of Work</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; font-size: 14px; color: #111; padding: 48px; }
+    h1 { font-size: 28px; font-weight: bold; margin-bottom: 32px; }
+    hr { border: none; border-top: 1px solid #ccc; margin-bottom: 32px; }
+    h2 { font-size: 20px; font-weight: bold; margin-bottom: 16px; }
+    .meta { margin-bottom: 24px; line-height: 1.8; }
+    .meta strong { font-weight: bold; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
+    th { text-align: left; font-weight: bold; border-bottom: 2px solid #111; padding: 8px 12px 8px 0; font-size: 13px; }
+    th:not(:first-child) { padding-left: 12px; }
+    td { padding: 10px 12px 10px 0; border-bottom: 1px solid #ddd; font-size: 13px; vertical-align: top; }
+    td:not(:first-child) { padding-left: 12px; }
+    th:nth-child(2), td:nth-child(2) { text-align: right; }
+    .total { color: #1a56db; font-weight: bold; font-size: 15px; margin-bottom: 12px; }
+    .allocation-note { font-size: 12px; color: #555; margin-bottom: 24px; }
+    h3 { font-size: 15px; font-weight: bold; margin-bottom: 8px; }
+    .notes { font-size: 14px; color: #333; }
+  </style>
+</head>
+<body>
+  <h1>${companyName}</h1>
+  <hr />
+  <h2>Scope of Work</h2>
+  <div class="meta">
+    ${bid.title ? `<div><strong>Job Title:</strong> ${bid.title}</div>` : ''}
+    ${bid.description ? `<div><strong>Description:</strong> ${bid.description}</div>` : ''}
+    ${bid.customer ? `<div><strong>Client:</strong> ${bid.customer.firstName} ${bid.customer.lastName}</div>` : ''}
+    ${address ? `<div><strong>Job Address:</strong> ${address}</div>` : ''}
+    ${bid.estimatedStartDate ? `<div><strong>Est. Start Date:</strong> ${fmtDate(bid.estimatedStartDate)}</div>` : ''}
+    ${bid.estimatedEndDate ? `<div><strong>Est. End Date:</strong> ${fmtDate(bid.estimatedEndDate)}</div>` : ''}
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>Description</th>
+        <th style="text-align:right">Price</th>
+        <th>Start Date</th>
+        <th>End Date</th>
+        <th>Contractor</th>
+      </tr>
+    </thead>
+    <tbody>${rowsHtml}</tbody>
+  </table>
+  <div class="total">Total: ${fmtCurrency(total)}</div>
+  ${hasAllocations ? `<div class="allocation-note">(A) - This line item is an allocation. Cost can be less or more than the allocation based on materials pricing.</div>` : ''}
+  ${bid.notes ? `<h3>Notes</h3><div class="notes">${bid.notes}</div>` : ''}
+</body>
+</html>`;
+  };
+
+  const handleViewPDF = () => {
+    const html = buildPdfHtml();
+    if (!html) return;
+    const blob = new Blob([html], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    setPdfBlobUrl(url);
+    setPdfModalOpen(true);
+  };
+
+  const handleClosePdfModal = () => {
+    setPdfModalOpen(false);
+    if (pdfBlobUrl) {
+      URL.revokeObjectURL(pdfBlobUrl);
+      setPdfBlobUrl(null);
+    }
+  };
+
+  const handlePrint = () => {
+    iframeRef.current?.contentWindow?.print();
+  };
+
   if (!bid) return null;
 
   return (
+    <>
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle>Statement of Work</CardTitle>
-          {bid.lineItems.length > 0 && (
-            <div className="text-sm">
-              <span className="text-slate-500">Total: </span>
-              <span className="text-lg font-bold">
-                {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(totalPrice)}
-              </span>
-            </div>
-          )}
+          <div className="flex items-center gap-4">
+            {bid.lineItems.length > 0 && (
+              <div className="text-sm">
+                <span className="text-slate-500">Total: </span>
+                <span className="text-lg font-bold">
+                  {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(totalPrice)}
+                </span>
+              </div>
+            )}
+            {bid.lineItems.length > 0 && (
+              <Button size="sm" variant="outline" onClick={handleViewPDF}>
+                <FileText className="mr-2 h-4 w-4" />
+                View PDF
+              </Button>
+            )}
+          </div>
         </div>
       </CardHeader>
       <CardContent className="p-4">
@@ -752,5 +896,28 @@ export function BidLineItemsCard({ bidId, bid, disabled }: BidLineItemsCardProps
         </div>
       </CardContent>
     </Card>
+
+    <Dialog open={pdfModalOpen} onOpenChange={(open) => { if (!open) handleClosePdfModal(); }}>
+      <DialogContent className="flex h-[90vh] max-w-4xl flex-col">
+        <DialogHeader>
+          <DialogTitle>Statement of Work</DialogTitle>
+        </DialogHeader>
+        <div className="min-h-0 flex-1">
+          {pdfBlobUrl && (
+            <iframe ref={iframeRef} src={pdfBlobUrl} className="h-full w-full rounded border-0" title="Statement of Work" />
+          )}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={handleClosePdfModal}>
+            Close
+          </Button>
+          <Button onClick={handlePrint}>
+            <Printer className="mr-2 h-4 w-4" />
+            Print / Save as PDF
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }

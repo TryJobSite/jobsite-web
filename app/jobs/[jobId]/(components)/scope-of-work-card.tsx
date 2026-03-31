@@ -19,7 +19,13 @@ import { DndContext, DragEndEvent, closestCenter, PointerSensor, useSensor, useS
 import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Card, CardContent, CardHeader, CardTitle } from '@/(components)/shadcn/ui/card';
-import { Dialog, DialogContent } from '@/(components)/shadcn/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/(components)/shadcn/ui/dialog';
 import { Button } from '@/(components)/shadcn/ui/button';
 import { Input } from '@/(components)/shadcn/ui/input';
 import { Label } from '@/(components)/shadcn/ui/label';
@@ -32,9 +38,10 @@ import {
   TableRow,
   TableFooter,
 } from '@/(components)/shadcn/ui/table';
-import { Plus, Trash2, Edit2, Check, X, Info, Download, GripVertical } from 'lucide-react';
+import { Plus, Trash2, Edit2, Check, X, Info, FileText, Printer, GripVertical } from 'lucide-react';
 import { useApi } from '@/(hooks)/useApi';
-import { ScopeOfWork } from './types';
+import { useMe } from '@/(hooks)/useMe';
+import { ScopeOfWork, JobForPdf } from './types';
 import { formatDate, formatDateOnlyForInput } from './utils';
 
 const lineItemSchema = z.object({
@@ -93,6 +100,7 @@ type TableMeta = {
 type ScopeOfWorkCardProps = {
   isLoading: boolean;
   sowData: ScopeOfWork | null | undefined;
+  job?: JobForPdf | null;
 };
 
 function SortableTableRow({ row, table }: { row: Row<LineItemRow>; table: TanTable<LineItemRow> }) {
@@ -131,16 +139,17 @@ function SortableTableRow({ row, table }: { row: Row<LineItemRow>; table: TanTab
   );
 }
 
-export function ScopeOfWorkCard({ isLoading, sowData }: ScopeOfWorkCardProps) {
+export function ScopeOfWorkCard({ isLoading, sowData, job }: ScopeOfWorkCardProps) {
   const params = useParams();
   const { api } = useApi();
   const queryClient = useQueryClient();
   const jobId = params.jobId as string;
+  const { me } = useMe();
 
   const [isCreating, setIsCreating] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
-  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
   const [editingRowIndex, setEditingRowIndex] = useState<number | null>(null);
   const [editingRowData, setEditingRowData] = useState<EditingRowData | null>(null);
   const [pendingNewRow, setPendingNewRow] = useState(false);
@@ -218,47 +227,112 @@ export function ScopeOfWorkCard({ isLoading, sowData }: ScopeOfWorkCardProps) {
     sowForm.reset();
   };
 
-  const handleDownloadPdf = async () => {
-    setIsDownloadingPdf(true);
-    try {
-      const response = await api.GET('/jobs/scopeofwork/pdf/{jobId}', {
-        params: { path: { jobId } },
-      });
+  const buildPdfHtml = () => {
+    if (!sowData) return '';
 
-      const buffer = response.data?.responseObject?.buffer;
-      let pdfBlob: Blob | null = null;
+    const companyName = me?.company?.companyName ?? '';
 
-      if (typeof buffer === 'string') {
-        const binary = atob(buffer);
-        const bytes = new Uint8Array(binary.length);
-        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-        pdfBlob = new Blob([bytes], { type: 'application/pdf' });
-      } else if (Array.isArray(buffer)) {
-        pdfBlob = new Blob([new Uint8Array(buffer as number[])], { type: 'application/pdf' });
-      } else if (buffer && typeof buffer === 'object' && 'data' in (buffer as any)) {
-        pdfBlob = new Blob([new Uint8Array((buffer as any).data as number[])], {
-          type: 'application/pdf',
-        });
-      } else {
-        pdfBlob = await response.response.blob();
-      }
+    const fmtDate = (d: string | null | undefined) => {
+      if (!d) return 'N/A';
+      return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    };
 
-      if (pdfBlob && pdfBlob.size > 0) {
-        setPdfUrl(URL.createObjectURL(pdfBlob));
-      } else {
-        alert('Received an empty PDF. Please try again.');
-      }
-    } catch (error) {
-      console.error('Download scope of work PDF error:', error);
-      alert('Failed to load PDF. Please try again.');
-    } finally {
-      setIsDownloadingPdf(false);
-    }
+    const fmtCurrency = (n: number | null | undefined) => {
+      if (n === null || n === undefined) return 'N/A';
+      return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n);
+    };
+
+    const address = job
+      ? [job.addressLine1, job.addressLine2, job.city, job.state, job.postalCode].filter(Boolean).join(', ')
+      : '';
+
+    const hasAllocations = orderedRows.some((r) => r.isAllocation);
+    const total = orderedRows.reduce((sum, r) => sum + (r.price ?? 0), 0);
+
+    const rowsHtml = orderedRows
+      .map(
+        (r) => `
+        <tr>
+          <td>${r.description}</td>
+          <td style="text-align:right">${r.price !== null ? fmtCurrency(r.price) + (r.isAllocation ? ' (A)' : '') : 'N/A'}</td>
+          <td>${fmtDate(r.startDate)}</td>
+          <td>${fmtDate(r.endDate)}</td>
+          <td>${r.contractor || 'N/A'}</td>
+        </tr>`
+      )
+      .join('');
+
+    return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Scope of Work</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; font-size: 14px; color: #111; padding: 48px; }
+    h1 { font-size: 28px; font-weight: bold; margin-bottom: 32px; }
+    hr { border: none; border-top: 1px solid #ccc; margin-bottom: 32px; }
+    h2 { font-size: 20px; font-weight: bold; margin-bottom: 16px; }
+    .meta { margin-bottom: 24px; line-height: 1.8; }
+    .meta strong { font-weight: bold; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
+    th { text-align: left; font-weight: bold; border-bottom: 2px solid #111; padding: 8px 12px 8px 0; font-size: 13px; }
+    th:not(:first-child) { padding-left: 12px; }
+    td { padding: 10px 12px 10px 0; border-bottom: 1px solid #ddd; font-size: 13px; vertical-align: top; }
+    td:not(:first-child) { padding-left: 12px; }
+    th:nth-child(2), td:nth-child(2) { text-align: right; }
+    .total { color: #1a56db; font-weight: bold; font-size: 15px; margin-bottom: 12px; }
+    .allocation-note { font-size: 12px; color: #555; margin-bottom: 24px; }
+    h3 { font-size: 15px; font-weight: bold; margin-bottom: 8px; }
+    .notes { font-size: 14px; color: #333; }
+    @media print { body { padding: 32px; } }
+  </style>
+</head>
+<body>
+  <h1>${companyName}</h1>
+  <hr />
+  <h2>Scope of Work</h2>
+  <div class="meta">
+    ${job?.title ? `<div><strong>Job Title:</strong> ${job.title}</div>` : ''}
+    ${job?.description ? `<div><strong>Description:</strong> ${job.description}</div>` : ''}
+    ${job?.customer ? `<div><strong>Client:</strong> ${job.customer.firstName} ${job.customer.lastName}</div>` : ''}
+    ${address ? `<div><strong>Job Address:</strong> ${address}</div>` : ''}
+    ${job?.estimatedStartDate ? `<div><strong>Est. Start Date:</strong> ${fmtDate(job.estimatedStartDate)}</div>` : ''}
+    ${job?.estimatedEndDate ? `<div><strong>Est. End Date:</strong> ${fmtDate(job.estimatedEndDate)}</div>` : ''}
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>Description</th>
+        <th style="text-align:right">Price</th>
+        <th>Start Date</th>
+        <th>End Date</th>
+        <th>Contractor</th>
+      </tr>
+    </thead>
+    <tbody>${rowsHtml}</tbody>
+  </table>
+  <div class="total">Total: ${fmtCurrency(total)}</div>
+  ${hasAllocations ? `<div class="allocation-note">(A) - This line item is an allocation. Cost can be less or more than the allocation based on materials pricing.</div>` : ''}
+  ${sowData.notes ? `<h3>Notes</h3><div class="notes">${sowData.notes}</div>` : ''}
+</body>
+</html>`;
+  };
+
+  const handleViewPdf = () => {
+    const html = buildPdfHtml();
+    if (!html) return;
+    const blob = new Blob([html], { type: 'text/html' });
+    setPdfBlobUrl(URL.createObjectURL(blob));
   };
 
   const handleClosePdf = () => {
-    if (pdfUrl) URL.revokeObjectURL(pdfUrl);
-    setPdfUrl(null);
+    if (pdfBlobUrl) URL.revokeObjectURL(pdfBlobUrl);
+    setPdfBlobUrl(null);
+  };
+
+  const handlePrint = () => {
+    iframeRef.current?.contentWindow?.print();
   };
 
   const onSubmit = async (data: ScopeOfWorkFormData) => {
@@ -751,9 +825,9 @@ export function ScopeOfWorkCard({ isLoading, sowData }: ScopeOfWorkCardProps) {
               </Button>
             )}
             {!isLoading && sowData && !isCreating && (
-              <Button size="sm" variant="outline" onClick={handleDownloadPdf} disabled={isDownloadingPdf}>
-                <Download className="mr-2 h-4 w-4" />
-                {isDownloadingPdf ? 'Downloading...' : 'View PDF'}
+              <Button size="sm" variant="outline" onClick={handleViewPdf}>
+                <FileText className="mr-2 h-4 w-4" />
+                View PDF
               </Button>
             )}
             {isCreating && (
@@ -1043,14 +1117,30 @@ export function ScopeOfWorkCard({ isLoading, sowData }: ScopeOfWorkCardProps) {
         </CardContent>
       </Card>
 
-      <Dialog
-        open={!!pdfUrl}
-        onOpenChange={(open) => {
-          if (!open) handleClosePdf();
-        }}
-      >
-        <DialogContent className="max-w-[75vw] gap-0 overflow-hidden p-0 [&>button:last-child]:hidden">
-          <iframe src={pdfUrl ?? ''} className="w-full rounded-lg" style={{ height: '90vh' }} />
+      <Dialog open={!!pdfBlobUrl} onOpenChange={(open) => { if (!open) handleClosePdf(); }}>
+        <DialogContent className="flex h-[90vh] max-w-4xl flex-col">
+          <DialogHeader>
+            <DialogTitle>Scope of Work</DialogTitle>
+          </DialogHeader>
+          <div className="min-h-0 flex-1">
+            {pdfBlobUrl && (
+              <iframe
+                ref={iframeRef}
+                src={pdfBlobUrl}
+                className="h-full w-full rounded border-0"
+                title="Scope of Work"
+              />
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={handleClosePdf}>
+              Close
+            </Button>
+            <Button onClick={handlePrint}>
+              <Printer className="mr-2 h-4 w-4" />
+              Print / Save as PDF
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </>

@@ -836,9 +836,10 @@ export default function JobDetailPage() {
         <TimelineCard
           lineItems={sowData?.lineItems}
           isLoading={isLoadingSOW}
+          useItemStatus
         />
 
-        <ScopeOfWorkCard isLoading={isLoadingSOW} sowData={sowData} />
+        <ScopeOfWorkCard isLoading={isLoadingSOW} sowData={sowData} job={job} />
 
         <ChangeOrdersCard
           isLoading={isLoadingChangeOrders}
