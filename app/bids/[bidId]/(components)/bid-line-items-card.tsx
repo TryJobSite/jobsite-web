@@ -707,8 +707,6 @@ export function BidLineItemsCard({ bidId, bid, disabled }: BidLineItemsCardProps
         <tr>
           <td>${r.description}</td>
           <td style="text-align:right">${r.price !== null ? fmtCurrency(r.price) + (r.isAllocation ? ' (A)' : '') : 'N/A'}</td>
-          <td>${fmtDate(r.startDate)}</td>
-          <td>${fmtDate(r.endDate)}</td>
           <td>${r.contractor || 'N/A'}</td>
         </tr>`
       )
@@ -756,8 +754,6 @@ export function BidLineItemsCard({ bidId, bid, disabled }: BidLineItemsCardProps
       <tr>
         <th>Description</th>
         <th style="text-align:right">Price</th>
-        <th>Start Date</th>
-        <th>End Date</th>
         <th>Contractor</th>
       </tr>
     </thead>
