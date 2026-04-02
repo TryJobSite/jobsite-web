@@ -4,15 +4,17 @@ import { useApi } from '@/(hooks)/useApi';
 import { useQuery, useQueries } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/(components)/shadcn/ui/card';
 import { Button } from '@/(components)/shadcn/ui/button';
-import { Copy, Gift, AlertCircle, ArrowRight, Mail, CheckCircle2, XCircle, ChevronRight } from 'lucide-react';
+import { Copy, Gift, AlertCircle, ArrowRight, Mail, CheckCircle2, XCircle, ChevronRight, Building2, Upload } from 'lucide-react';
 import Link from 'next/link';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { Job } from '@/jobs/[jobId]/(components)/types';
 
 export default function Home() {
-  const { me, refresh } = useMe();
+  const { me, refresh, clientRefresh } = useMe();
   const { api } = useApi();
   const [copied, setCopied] = useState(false);
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const logoInputRef = useRef<HTMLInputElement>(null);
   const referralCode = me?.user?.referralCode;
 
   const { data, isLoading } = useQuery({
@@ -95,6 +97,30 @@ export default function Home() {
       .join(' ');
   };
 
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsUploadingLogo(true);
+    try {
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve((reader.result as string).split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+      await api.PUT('/companies/logo', {
+        body: { fileName: file.name, fileType: file.type, fileData: base64 },
+      });
+      await clientRefresh();
+    } catch (error) {
+      console.error('Logo upload error:', error);
+      alert('Failed to upload logo. Please try again.');
+    } finally {
+      setIsUploadingLogo(false);
+      if (logoInputRef.current) logoInputRef.current.value = '';
+    }
+  };
+
   const handleJobClick = (job: Job) => {
     window.location.href = `/jobs/${job.jobId}`;
   };
@@ -123,13 +149,43 @@ export default function Home() {
   // };
   return (
     <div className="space-y-6 p-6">
-      {/* Stats Card */}
-      {!isLoading && data && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Job Statistics</CardTitle>
-          </CardHeader>
-          <CardContent>
+      {/* Logo + Stats Card */}
+      <Card>
+        <CardContent className="flex items-center gap-6 p-6">
+          {/* Logo */}
+          <div className="flex shrink-0 flex-col items-center gap-2 border-r border-slate-200 pr-6">
+            {me?.company?.companyLogoUrl ? (
+              <img
+                src={me.company.companyLogoUrl}
+                alt="Company logo"
+                className="h-24 w-24 rounded-lg object-contain"
+              />
+            ) : (
+              <div className="flex h-24 w-24 items-center justify-center rounded-lg border-2 border-dashed border-slate-200 bg-slate-50">
+                <Building2 className="h-10 w-10 text-slate-300" />
+              </div>
+            )}
+            <input
+              ref={logoInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleLogoUpload}
+            />
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={isUploadingLogo}
+              onClick={() => logoInputRef.current?.click()}
+            >
+              <Upload className="mr-2 h-4 w-4" />
+              {isUploadingLogo ? 'Uploading...' : me?.company?.companyLogoUrl ? 'Change Logo' : 'Upload Logo'}
+            </Button>
+          </div>
+
+          {/* Stats */}
+          <div className="flex flex-1 flex-col gap-1">
+            <div className="mb-3 text-sm font-medium text-slate-500">Job Statistics</div>
             <div className="grid gap-6 md:grid-cols-3">
               <div className="flex flex-col">
                 <div className="text-sm text-slate-500">Active Jobs</div>
@@ -146,9 +202,9 @@ export default function Home() {
                 <div className="mt-1 text-3xl font-bold text-slate-900">{stats.completedThisYear}</div>
               </div>
             </div>
-          </CardContent>
-        </Card>
-      )}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* {referralCode && (
         <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10">

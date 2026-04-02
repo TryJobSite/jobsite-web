@@ -238,11 +238,13 @@ export interface paths {
                                     state: string | null;
                                     postalCode: string | null;
                                     notes: string | null;
+                                    companyLogoS3Path: string | null;
                                     metadata: {
                                         [key: string]: unknown;
                                     } | null;
                                     createdAt: string;
                                     updatedAt: string;
+                                    companyLogoUrl: string | null;
                                 };
                             };
                             statusCode: number;
@@ -2451,6 +2453,179 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/companies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Success */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            success: boolean;
+                            message: string;
+                            responseObject: {
+                                company: {
+                                    companyId: string;
+                                    companyName: string;
+                                    email: string | null;
+                                    phoneNumber: string | null;
+                                    addressLine1: string | null;
+                                    addressLine2: string | null;
+                                    city: string | null;
+                                    state: string | null;
+                                    postalCode: string | null;
+                                    notes: string | null;
+                                    companyLogoS3Path: string | null;
+                                    metadata: {
+                                        [key: string]: unknown;
+                                    } | null;
+                                    createdAt: string;
+                                    updatedAt: string;
+                                    companyLogoUrl: string | null;
+                                };
+                            };
+                            statusCode: number;
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        companyName?: string;
+                        /** Format: email */
+                        email?: string | null;
+                        phoneNumber?: string | null;
+                        addressLine1?: string | null;
+                        addressLine2?: string | null;
+                        city?: string | null;
+                        state?: string | null;
+                        postalCode?: string | null;
+                        notes?: string | null;
+                        metadata?: {
+                            [key: string]: unknown;
+                        };
+                    };
+                };
+            };
+            responses: {
+                /** @description Success */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            success: boolean;
+                            message: string;
+                            responseObject: {
+                                company: {
+                                    companyId: string;
+                                    companyName: string;
+                                    email: string | null;
+                                    phoneNumber: string | null;
+                                    addressLine1: string | null;
+                                    addressLine2: string | null;
+                                    city: string | null;
+                                    state: string | null;
+                                    postalCode: string | null;
+                                    notes: string | null;
+                                    companyLogoS3Path: string | null;
+                                    metadata: {
+                                        [key: string]: unknown;
+                                    } | null;
+                                    createdAt: string;
+                                    updatedAt: string;
+                                    companyLogoUrl: string | null;
+                                };
+                            };
+                            statusCode: number;
+                        };
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
+    "/companies/logo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        fileName: string;
+                        fileType: string;
+                        fileData: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Success */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            success: boolean;
+                            message: string;
+                            responseObject: {
+                                companyLogoUri: string;
+                                companyLogoUrl: string;
+                            };
+                            statusCode: number;
+                        };
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -2468,6 +2643,7 @@ export interface components {
         Jobs: Record<string, never>;
         Customers: Record<string, never>;
         Bids: Record<string, never>;
+        Companies: Record<string, never>;
     };
     responses: never;
     parameters: never;

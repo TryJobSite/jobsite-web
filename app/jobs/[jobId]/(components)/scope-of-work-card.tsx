@@ -231,6 +231,7 @@ export function ScopeOfWorkCard({ isLoading, sowData, job }: ScopeOfWorkCardProp
     if (!sowData) return '';
 
     const companyName = me?.company?.companyName ?? '';
+    const companyLogoUrl = me?.company?.companyLogoUrl;
 
     const fmtDate = (d: string | null | undefined) => {
       if (!d) return 'N/A';
@@ -289,7 +290,7 @@ export function ScopeOfWorkCard({ isLoading, sowData, job }: ScopeOfWorkCardProp
   </style>
 </head>
 <body>
-  <h1>${companyName}</h1>
+  ${companyLogoUrl ? `<img src="${companyLogoUrl}" alt="${companyName}" style="max-height:80px;max-width:300px;object-fit:contain;display:block;margin-bottom:8px;" />` : `<h1>${companyName}</h1>`}
   <hr />
   <h2>Scope of Work</h2>
   <div class="meta">
